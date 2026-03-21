@@ -176,7 +176,7 @@ app.get('/api/balance/:address', async (req, res) => {
 // ============= VAULT API ENDPOINTS =============
 
 // Get or create user profile
-app.post('/api/user/profile', async (req, res) => {
+app.post('/user/profile', async (req, res) => {
   try {
     const { walletAddress, publicKey, ansName } = req.body;
     
@@ -201,7 +201,7 @@ app.post('/api/user/profile', async (req, res) => {
 });
 
 // Get user vault
-app.get('/api/vault/:walletAddress', async (req, res) => {
+app.get('/vault/:walletAddress', async (req, res) => {
   try {
     const { walletAddress } = req.params;
     
@@ -222,7 +222,7 @@ app.get('/api/vault/:walletAddress', async (req, res) => {
 });
 
 // Deposit to vault
-app.post('/api/vault/deposit', async (req, res) => {
+app.post('/vault/deposit', async (req, res) => {
   try {
     const { walletAddress, coinSymbol, amount, transactionHash } = req.body;
     
@@ -280,7 +280,7 @@ app.post('/api/vault/deposit', async (req, res) => {
 });
 
 // Withdraw from vault
-app.post('/api/vault/withdraw', async (req, res) => {
+app.post('/vault/withdraw', async (req, res) => {
   try {
     const { walletAddress, coinSymbol, amount, transactionHash } = req.body;
     
@@ -348,7 +348,7 @@ app.post('/api/vault/withdraw', async (req, res) => {
 });
 
 // Get transaction history
-app.get('/api/transactions/:walletAddress', async (req, res) => {
+app.get('/transactions/:walletAddress', async (req, res) => {
   try {
     const { walletAddress } = req.params;
     const { type, status, coinSymbol, limit = 50, skip = 0 } = req.query;
@@ -372,7 +372,7 @@ app.get('/api/transactions/:walletAddress', async (req, res) => {
 });
 
 // Get transaction statistics
-app.get('/api/transactions/:walletAddress/stats', async (req, res) => {
+app.get('/transactions/:walletAddress/stats', async (req, res) => {
   try {
     const { walletAddress } = req.params;
     const { timeframe = '30d' } = req.query;
@@ -390,7 +390,7 @@ app.get('/api/transactions/:walletAddress/stats', async (req, res) => {
 });
 
 // Create agentic log
-app.post('/api/agents/log', async (req, res) => {
+app.post('/agents/log', async (req, res) => {
   try {
     const { walletAddress, sessionId, agentType, action, input, priority } = req.body;
     
@@ -420,7 +420,7 @@ app.post('/api/agents/log', async (req, res) => {
 });
 
 // Update agentic log
-app.put('/api/agents/log/:logId', async (req, res) => {
+app.put('/agents/log/:logId', async (req, res) => {
   try {
     const { logId } = req.params;
     const { status, output, error } = req.body;
@@ -442,7 +442,7 @@ app.put('/api/agents/log/:logId', async (req, res) => {
 });
 
 // Get agent activity
-app.get('/api/agents/:walletAddress/activity', async (req, res) => {
+app.get('/agents/:walletAddress/activity', async (req, res) => {
   try {
     const { walletAddress } = req.params;
     const { agentType, action, status, priority, limit = 50, skip = 0 } = req.query;
@@ -467,7 +467,7 @@ app.get('/api/agents/:walletAddress/activity', async (req, res) => {
 });
 
 // Get agent performance stats
-app.get('/api/agents/:walletAddress/stats/:agentType', async (req, res) => {
+app.get('/agents/:walletAddress/stats/:agentType', async (req, res) => {
   try {
     const { walletAddress, agentType } = req.params;
     const { timeframe = '30d' } = req.query;
@@ -485,7 +485,7 @@ app.get('/api/agents/:walletAddress/stats/:agentType', async (req, res) => {
 });
 
 // Get arbitrage stats for a wallet
-app.get('/api/vault/:walletAddress/arbitrage-stats', async (req, res) => {
+app.get('/vault/:walletAddress/arbitrage-stats', async (req, res) => {
   try {
     const { walletAddress } = req.params;
     
@@ -537,7 +537,7 @@ app.get('/api/vault/:walletAddress/arbitrage-stats', async (req, res) => {
 });
 
 // Update arbitrage stats
-app.post('/api/vault/:walletAddress/arbitrage-stats', async (req, res) => {
+app.post('/vault/:walletAddress/arbitrage-stats', async (req, res) => {
   try {
     const { walletAddress } = req.params;
     const { 
@@ -582,7 +582,7 @@ app.post('/api/vault/:walletAddress/arbitrage-stats', async (req, res) => {
 });
 
 // Get supported coins
-app.get('/api/coins', async (req, res) => {
+app.get('/coins', async (req, res) => {
   try {
     const coins = await Coin.find({ isActive: true }).sort({ symbol: 1 });
     
@@ -597,7 +597,7 @@ app.get('/api/coins', async (req, res) => {
 });
 
 // Get vault-enabled coins
-app.get('/api/coins/vault', async (req, res) => {
+app.get('/coins/vault', async (req, res) => {
   try {
     const coins = await Coin.getVaultCoins();
     
