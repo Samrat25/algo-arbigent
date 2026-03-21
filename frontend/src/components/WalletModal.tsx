@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAlgorandWallet } from '@/contexts/AlgorandWalletContext';
 import {
@@ -45,29 +45,48 @@ const WALLET_OPTIONS = [
 ];
 
 export function WalletModal({ open, onOpenChange }: WalletModalProps) {
-  const { connect, connecting, error, clearError } = useAlgorandWallet();
+  const { connect, connecting, error, clearError, connected } = useAlgorandWallet();
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [shouldNavigate, setShouldNavigate] = useState(false);
   const navigate = useNavigate();
 
+  // Effect to handle navigation when connection is successful
+  useEffect(() => {
+    if (shouldNavigate && connected && !connecting) {
+      console.log('WalletModal: Connection confirmed, navigating to dashboard');
+      setIsNavigating(true);
+      onOpenChange(false);
+      
+      // Small delay to ensure modal closes
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+        setShouldNavigate(false);
+        setSelectedWallet(null);
+        setIsNavigating(false);
+      }, 300);
+    }
+  }, [connected, connecting, shouldNavigate, navigate, onOpenChange]);
+
   const handleConnect = async (walletId: string) => {
+    // Prevent double connection attempts
+    if (connecting || isNavigating) {
+      console.log('WalletModal: Already connecting or navigating, ignoring');
+      return;
+    }
+
     try {
       setSelectedWallet(walletId);
       clearError();
+      setShouldNavigate(true);
       console.log('WalletModal: Connecting to', walletId);
       await connect(walletId);
-      console.log('WalletModal: Connection successful');
-      
-      // Wait a bit longer for state to propagate
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      onOpenChange(false);
-      
-      // Navigate to dashboard after successful connection
-      console.log('WalletModal: Navigating to dashboard');
-      navigate('/dashboard', { replace: true });
+      console.log('WalletModal: Connection request completed');
     } catch (err) {
       console.error('WalletModal: Connection error:', err);
       setSelectedWallet(null);
+      setIsNavigating(false);
+      setShouldNavigate(false);
     }
   };
 
@@ -93,7 +112,7 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
             <Card
               key={wallet.id}
               className="p-4 hover:border-primary transition-colors cursor-pointer"
-              onClick={() => !connecting && handleConnect(wallet.id)}
+              onClick={() => !connecting && !isNavigating && handleConnect(wallet.id)}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">

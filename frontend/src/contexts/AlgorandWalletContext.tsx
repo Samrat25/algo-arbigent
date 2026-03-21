@@ -122,9 +122,18 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
     url: ''
   }));
 
-  const connected = isActive && !!activeAccount;
+  const connected = Boolean(isActive && activeAccount);
 
-  // Connection methods
+  // Effect to log connection state changes
+  useEffect(() => {
+    console.log('Connection state:', { 
+      connected, 
+      isActive, 
+      hasAccount: !!activeAccount,
+      accountAddress: activeAccount?.address,
+      isReady 
+    });
+  }, [connected, isActive, activeAccount, isReady]);
   const connect = async (walletId: string) => {
     try {
       setConnecting(true);
@@ -468,16 +477,6 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       fetchBalances();
     }
   }, [connected, account?.address]);
-
-  // Effect to log connection state changes
-  useEffect(() => {
-    console.log('Connection state:', { 
-      connected, 
-      isActive, 
-      hasAccount: !!activeAccount,
-      accountAddress: activeAccount?.address 
-    });
-  }, [connected, isActive, activeAccount]);
 
   // Effect to restore connection state
   useEffect(() => {
