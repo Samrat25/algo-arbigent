@@ -290,7 +290,7 @@ app.post('/vault/withdraw', async (req, res) => {
       });
     }
     
-    const vault = await Vault.findOne({ walletAddress: walletAddress.toLowerCase() });
+    const vault = await Vault.findOne({ walletAddress: walletAddress.toUpperCase() });
     if (!vault) {
       return res.status(404).json({ error: 'Vault not found' });
     }

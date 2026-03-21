@@ -6,12 +6,13 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    lowercase: true,
+    uppercase: true, // Algorand addresses are uppercase
     validate: {
       validator: function(v) {
-        return /^0x[a-fA-F0-9]{64}$/.test(v);
+        // Algorand address validation: 58 characters, base32 encoded
+        return /^[A-Z2-7]{58}$/.test(v.toUpperCase());
       },
-      message: 'Invalid wallet address format'
+      message: 'Invalid Algorand wallet address format'
     }
   },
   publicKey: {
@@ -111,11 +112,11 @@ userSchema.pre('save', function(next) {
 
 // Static method to find or create user
 userSchema.statics.findOrCreate = async function(walletData) {
-  let user = await this.findOne({ walletAddress: walletData.walletAddress.toLowerCase() });
+  let user = await this.findOne({ walletAddress: walletData.walletAddress.toUpperCase() });
   
   if (!user) {
     user = new this({
-      walletAddress: walletData.walletAddress.toLowerCase(),
+      walletAddress: walletData.walletAddress.toUpperCase(),
       publicKey: walletData.publicKey,
       ansName: walletData.ansName || null
     });

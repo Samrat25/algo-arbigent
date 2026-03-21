@@ -29,12 +29,13 @@ const vaultSchema = new mongoose.Schema({
   walletAddress: {
     type: String,
     required: true,
-    lowercase: true,
+    uppercase: true, // Algorand addresses are uppercase
     validate: {
       validator: function(v) {
-        return /^0x[a-fA-F0-9]{64}$/.test(v);
+        // Algorand address validation: 58 characters, base32 encoded
+        return /^[A-Z2-7]{58}$/.test(v.toUpperCase());
       },
-      message: 'Invalid wallet address format'
+      message: 'Invalid Algorand wallet address format'
     }
   },
   balances: [vaultBalanceSchema],
@@ -231,13 +232,13 @@ vaultSchema.virtual('portfolioValue').get(function() {
 
 // Static method to find or create vault
 vaultSchema.statics.findOrCreate = async function(walletAddress) {
-  let vault = await this.findOne({ walletAddress: walletAddress.toLowerCase() });
+  let vault = await this.findOne({ walletAddress: walletAddress.toUpperCase() });
   
   if (!vault) {
     // Create vault with default balances for supported coins
     const defaultBalances = [
       {
-        coinSymbol: 'APT',
+        coinSymbol: 'ALGO',
         balance: '0',
         lockedBalance: '0',
         earnedRewards: '0',
@@ -260,7 +261,7 @@ vaultSchema.statics.findOrCreate = async function(walletAddress) {
     ];
     
     vault = new this({
-      walletAddress: walletAddress.toLowerCase(),
+      walletAddress: walletAddress.toUpperCase(),
       balances: defaultBalances
     });
     await vault.save();
