@@ -1,19 +1,66 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Download, Upload, Wallet } from "lucide-react";
+import { ArrowLeft, Download, Upload, Wallet, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAlgorandWallet } from '@/contexts/AlgorandWalletContext';
+import { useVault } from '@/hooks/useVault';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import CryptoLogo from "@/components/CryptoLogo";
+
+const USDC_ASSET_ID = parseInt(import.meta.env.VITE_USDC_ASSET_ID || '0');
+const USDT_ASSET_ID = parseInt(import.meta.env.VITE_USDT_ASSET_ID || '0');
 
 const Vault = () => {
   const { account, connected, balances, smartContract } = useAlgorandWallet();
+  const { vault, isLoading: vaultLoading, refreshVault, getFormattedBalance } = useVault();
   const [selectedToken, setSelectedToken] = useState<"ALGO" | "USDC" | "USDT">("ALGO");
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [showOptInSection, setShowOptInSection] = useState(true);
+  const [optInSuccess, setOptInSuccess] = useState<string | null>(null);
+
+  // Refresh vault on mount and after transactions
+  useEffect(() => {
+    if (connected && account?.address) {
+      refreshVault();
+    }
+  }, [connected, account?.address, refreshVault]);
+
+  const handleOptIn = async (type: 'USDC' | 'USDT' | 'VAULT') => {
+    setOptInSuccess(null);
+    smartContract.clearError(); // Clear any previous errors
+    let success = false;
+    
+    if (type === 'VAULT') {
+      success = await smartContract.optInToApp();
+      if (success) {
+        const msg = smartContract.error?.includes('Already') 
+          ? 'Already opted into Vault!' 
+          : 'Successfully opted into Vault!';
+        setOptInSuccess(msg);
+        smartContract.clearError(); // Clear the "already opted in" error
+      }
+    } else {
+      const assetId = type === 'USDC' ? USDC_ASSET_ID : USDT_ASSET_ID;
+      success = await smartContract.optInToAsset(assetId, type);
+      if (success) {
+        const msg = smartContract.error?.includes('Already')
+          ? `Already opted into ${type}!`
+          : `Successfully opted into ${type}!`;
+        setOptInSuccess(msg);
+        smartContract.clearError(); // Clear the "already opted in" error
+      }
+    }
+    
+    if (success) {
+      setTimeout(() => setOptInSuccess(null), 3000);
+    }
+  };
 
   const supportedTokens = [
     { symbol: "ALGO" as const, name: "Algorand" },
@@ -34,6 +81,8 @@ const Vault = () => {
       
       if (success) {
         setDepositAmount("");
+        // Refresh vault balance after deposit
+        setTimeout(() => refreshVault(), 2000);
       }
     } catch (err) {
       console.error('Deposit error:', err);
@@ -47,6 +96,8 @@ const Vault = () => {
       const success = await smartContract.withdrawFromVault(withdrawAmount, selectedToken);
       if (success) {
         setWithdrawAmount("");
+        // Refresh vault balance after withdraw
+        setTimeout(() => refreshVault(), 2000);
       }
     } catch (err) {
       console.error('Withdraw error:', err);
@@ -92,6 +143,81 @@ const Vault = () => {
             <p className="text-muted-foreground">Manage your crypto assets securely</p>
           </div>
 
+          {/* Opt-in Section */}
+          {showOptInSection && (
+            <Card className="mb-6 border-primary/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-primary" />
+                  Asset Setup Required
+                </CardTitle>
+                <CardDescription>
+                  Before depositing USDC or USDT, you need to opt-in to these assets
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {optInSuccess && (
+                  <Alert className="border-green-500 bg-green-50">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-800">{optInSuccess}</AlertDescription>
+                  </Alert>
+                )}
+                
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Opt-in allows your wallet to receive and hold these tokens. This is a one-time setup.
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => handleOptIn('USDC')}
+                    disabled={smartContract.isProcessing}
+                    className="w-full"
+                  >
+                    {smartContract.isProcessing ? 'Processing...' : 'Opt-in to USDC'}
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => handleOptIn('USDT')}
+                    disabled={smartContract.isProcessing}
+                    className="w-full"
+                  >
+                    {smartContract.isProcessing ? 'Processing...' : 'Opt-in to USDT'}
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => handleOptIn('VAULT')}
+                    disabled={smartContract.isProcessing}
+                    className="w-full"
+                  >
+                    {smartContract.isProcessing ? 'Processing...' : 'Opt-in to Vault'}
+                  </Button>
+                </div>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowOptInSection(false)}
+                  className="w-full"
+                >
+                  Hide this section
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {smartContract.error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{smartContract.error}</AlertDescription>
+            </Alert>
+          )}
+
           {/* Token Selection */}
           <Card className="mb-6">
             <CardHeader>
@@ -115,16 +241,58 @@ const Vault = () => {
 
           {/* Balance Display */}
           <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Your Balance</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Your Balances</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={refreshVault}
+                disabled={vaultLoading}
+              >
+                <RefreshCw className={`h-4 w-4 ${vaultLoading ? 'animate-spin' : ''}`} />
+              </Button>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">
-                {balances[selectedToken]} {selectedToken}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {supportedTokens.map((token) => {
+                  const vaultBalance = getFormattedBalance(token.symbol);
+                  const walletBalance = balances[token.symbol] || '0';
+                  
+                  return (
+                    <div
+                      key={token.symbol}
+                      className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                        selectedToken === token.symbol
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                      onClick={() => setSelectedToken(token.symbol)}
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <CryptoLogo symbol={token.symbol} size="sm" />
+                        <div>
+                          <h3 className="font-semibold text-sm">{token.symbol}</h3>
+                          <p className="text-xs text-muted-foreground">{token.name}</p>
+                        </div>
+                      </div>
+                      
+                      {/* Vault Balance */}
+                      <div className="mb-3 pb-3 border-b border-border/50">
+                        <p className="text-xs text-muted-foreground mb-1">Vault Balance</p>
+                        <p className="text-2xl font-bold text-primary">
+                          {vaultLoading ? '...' : vaultBalance}
+                        </p>
+                      </div>
+                      
+                      {/* Wallet Balance */}
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Wallet Balance</p>
+                        <p className="text-lg font-semibold">{walletBalance}</p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                Wallet Balance
-              </p>
             </CardContent>
           </Card>
 
