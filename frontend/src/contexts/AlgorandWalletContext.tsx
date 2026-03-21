@@ -252,10 +252,11 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       });
 
       // Create app call transaction
+      const encoder = new TextEncoder();
       const appCallTxn = algosdk.makeApplicationNoOpTxnFromObject({
         from: account.address,
         appIndex: APP_ID,
-        appArgs: [new Uint8Array(Buffer.from('deposit_algo'))],
+        appArgs: [encoder.encode('deposit_algo')],
         suggestedParams: params
       });
 
@@ -308,10 +309,11 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       });
 
       // Create app call transaction
+      const encoder = new TextEncoder();
       const appCallTxn = algosdk.makeApplicationNoOpTxnFromObject({
         from: account.address,
         appIndex: APP_ID,
-        appArgs: [new Uint8Array(Buffer.from(`deposit_${token.toLowerCase()}`))],
+        appArgs: [encoder.encode(`deposit_${token.toLowerCase()}`)],
         suggestedParams: params
       });
 
@@ -353,11 +355,12 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       const params = await algodClient.getTransactionParams().do();
       const amountMicro = Math.floor(parseFloat(amount) * 1000000);
 
+      const encoder = new TextEncoder();
       const appCallTxn = algosdk.makeApplicationNoOpTxnFromObject({
         from: account.address,
         appIndex: APP_ID,
         appArgs: [
-          new Uint8Array(Buffer.from(`withdraw_${sourceToken.toLowerCase()}`)),
+          encoder.encode(`withdraw_${sourceToken.toLowerCase()}`),
           algosdk.encodeUint64(amountMicro)
         ],
         suggestedParams: params
@@ -394,11 +397,12 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       const params = await algodClient.getTransactionParams().do();
       const amountMicro = Math.floor(parseFloat(amount) * 1000000);
 
+      const encoder = new TextEncoder();
       const appCallTxn = algosdk.makeApplicationNoOpTxnFromObject({
         from: account.address,
         appIndex: APP_ID,
         appArgs: [
-          new Uint8Array(Buffer.from(`swap_${fromToken.toLowerCase()}_to_${toToken.toLowerCase()}`)),
+          encoder.encode(`swap_${fromToken.toLowerCase()}_to_${toToken.toLowerCase()}`),
           algosdk.encodeUint64(amountMicro)
         ],
         suggestedParams: params
@@ -435,11 +439,12 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       const params = await algodClient.getTransactionParams().do();
       const amountMicro = Math.floor(parseFloat(inputAmount) * 1000000);
 
+      const encoder = new TextEncoder();
       const appCallTxn = algosdk.makeApplicationNoOpTxnFromObject({
         from: account.address,
         appIndex: APP_ID,
         appArgs: [
-          new Uint8Array(Buffer.from('execute_arbitrage')),
+          encoder.encode('execute_arbitrage'),
           algosdk.encodeUint64(amountMicro)
         ],
         suggestedParams: params
