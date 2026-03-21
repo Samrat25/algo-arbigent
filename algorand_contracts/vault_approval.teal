@@ -1,0 +1,525 @@
+#pragma version 8
+txn ApplicationID
+int 0
+==
+bnz main_l36
+txn OnCompletion
+int OptIn
+==
+bnz main_l35
+txn OnCompletion
+int CloseOut
+==
+bnz main_l34
+txn OnCompletion
+int UpdateApplication
+==
+bnz main_l33
+txn OnCompletion
+int DeleteApplication
+==
+bnz main_l32
+txna ApplicationArgs 0
+byte "set_usdc"
+==
+bnz main_l31
+txna ApplicationArgs 0
+byte "set_usdt"
+==
+bnz main_l30
+txna ApplicationArgs 0
+byte "deposit_algo"
+==
+bnz main_l29
+txna ApplicationArgs 0
+byte "withdraw_algo"
+==
+bnz main_l28
+txna ApplicationArgs 0
+byte "deposit_usdc"
+==
+bnz main_l27
+txna ApplicationArgs 0
+byte "withdraw_usdc"
+==
+bnz main_l26
+txna ApplicationArgs 0
+byte "deposit_usdt"
+==
+bnz main_l25
+txna ApplicationArgs 0
+byte "withdraw_usdt"
+==
+bnz main_l24
+txna ApplicationArgs 0
+byte "swap_algo_to_usdc"
+==
+bnz main_l23
+txna ApplicationArgs 0
+byte "swap_algo_to_usdt"
+==
+bnz main_l22
+txna ApplicationArgs 0
+byte "swap_usdc_to_usdt"
+==
+bnz main_l21
+txna ApplicationArgs 0
+byte "swap_usdt_to_usdc"
+==
+bnz main_l20
+txna ApplicationArgs 0
+byte "execute_arbitrage"
+==
+bnz main_l19
+err
+main_l19:
+txna ApplicationArgs 1
+btoi
+int 0
+>
+assert
+int 1
+return
+main_l20:
+txna ApplicationArgs 1
+btoi
+int 0
+>
+assert
+txn Sender
+byte "usdt_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+>=
+assert
+txn Sender
+byte "usdt_balance"
+txn Sender
+byte "usdt_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+-
+app_local_put
+txn Sender
+byte "usdc_balance"
+txn Sender
+byte "usdc_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+int 9995
+*
+int 10000
+/
++
+app_local_put
+int 1
+return
+main_l21:
+txna ApplicationArgs 1
+btoi
+int 0
+>
+assert
+txn Sender
+byte "usdc_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+>=
+assert
+txn Sender
+byte "usdc_balance"
+txn Sender
+byte "usdc_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+-
+app_local_put
+txn Sender
+byte "usdt_balance"
+txn Sender
+byte "usdt_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+int 9995
+*
+int 10000
+/
++
+app_local_put
+int 1
+return
+main_l22:
+txna ApplicationArgs 1
+btoi
+int 0
+>
+assert
+txn Sender
+byte "algo_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+>=
+assert
+txn Sender
+byte "algo_balance"
+txn Sender
+byte "algo_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+-
+app_local_put
+txn Sender
+byte "usdt_balance"
+txn Sender
+byte "usdt_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+int 8050000
+*
+int 1000000
+/
++
+app_local_put
+int 1
+return
+main_l23:
+txna ApplicationArgs 1
+btoi
+int 0
+>
+assert
+txn Sender
+byte "algo_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+>=
+assert
+txn Sender
+byte "algo_balance"
+txn Sender
+byte "algo_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+-
+app_local_put
+txn Sender
+byte "usdc_balance"
+txn Sender
+byte "usdc_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+int 8000000
+*
+int 1000000
+/
++
+app_local_put
+int 1
+return
+main_l24:
+txna ApplicationArgs 1
+btoi
+int 0
+>
+assert
+txn Sender
+byte "usdt_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+>=
+assert
+txn Sender
+byte "usdt_balance"
+txn Sender
+byte "usdt_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+-
+app_local_put
+itxn_begin
+int axfer
+itxn_field TypeEnum
+byte "usdt_asset_id"
+app_global_get
+itxn_field XferAsset
+txn Sender
+itxn_field AssetReceiver
+txna ApplicationArgs 1
+btoi
+itxn_field AssetAmount
+int 0
+itxn_field Fee
+itxn_submit
+int 1
+return
+main_l25:
+gtxn 0 TypeEnum
+int axfer
+==
+assert
+gtxn 0 XferAsset
+byte "usdt_asset_id"
+app_global_get
+==
+assert
+gtxn 0 AssetReceiver
+global CurrentApplicationAddress
+==
+assert
+gtxn 0 AssetAmount
+int 0
+>
+assert
+txn Sender
+byte "usdt_balance"
+txn Sender
+byte "usdt_balance"
+app_local_get
+gtxn 0 AssetAmount
++
+app_local_put
+txn Sender
+byte "last_deposit"
+global LatestTimestamp
+app_local_put
+int 1
+return
+main_l26:
+txna ApplicationArgs 1
+btoi
+int 0
+>
+assert
+txn Sender
+byte "usdc_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+>=
+assert
+txn Sender
+byte "usdc_balance"
+txn Sender
+byte "usdc_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+-
+app_local_put
+itxn_begin
+int axfer
+itxn_field TypeEnum
+byte "usdc_asset_id"
+app_global_get
+itxn_field XferAsset
+txn Sender
+itxn_field AssetReceiver
+txna ApplicationArgs 1
+btoi
+itxn_field AssetAmount
+int 0
+itxn_field Fee
+itxn_submit
+int 1
+return
+main_l27:
+gtxn 0 TypeEnum
+int axfer
+==
+assert
+gtxn 0 XferAsset
+byte "usdc_asset_id"
+app_global_get
+==
+assert
+gtxn 0 AssetReceiver
+global CurrentApplicationAddress
+==
+assert
+gtxn 0 AssetAmount
+int 0
+>
+assert
+txn Sender
+byte "usdc_balance"
+txn Sender
+byte "usdc_balance"
+app_local_get
+gtxn 0 AssetAmount
++
+app_local_put
+txn Sender
+byte "last_deposit"
+global LatestTimestamp
+app_local_put
+int 1
+return
+main_l28:
+txna ApplicationArgs 1
+btoi
+int 0
+>
+assert
+txn Sender
+byte "algo_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+>=
+assert
+txn Sender
+byte "algo_balance"
+txn Sender
+byte "algo_balance"
+app_local_get
+txna ApplicationArgs 1
+btoi
+-
+app_local_put
+itxn_begin
+int pay
+itxn_field TypeEnum
+txn Sender
+itxn_field Receiver
+txna ApplicationArgs 1
+btoi
+itxn_field Amount
+int 0
+itxn_field Fee
+itxn_submit
+int 1
+return
+main_l29:
+gtxn 0 TypeEnum
+int pay
+==
+assert
+gtxn 0 Receiver
+global CurrentApplicationAddress
+==
+assert
+gtxn 0 Amount
+int 0
+>
+assert
+txn Sender
+byte "algo_balance"
+txn Sender
+byte "algo_balance"
+app_local_get
+gtxn 0 Amount
++
+app_local_put
+txn Sender
+byte "total_deposited"
+txn Sender
+byte "total_deposited"
+app_local_get
+gtxn 0 Amount
++
+app_local_put
+txn Sender
+byte "last_deposit"
+global LatestTimestamp
+app_local_put
+byte "total_deposits"
+byte "total_deposits"
+app_global_get
+int 1
++
+app_global_put
+int 1
+return
+main_l30:
+txn Sender
+global CreatorAddress
+==
+assert
+byte "usdt_asset_id"
+txna ApplicationArgs 1
+btoi
+app_global_put
+int 1
+return
+main_l31:
+txn Sender
+global CreatorAddress
+==
+assert
+byte "usdc_asset_id"
+txna ApplicationArgs 1
+btoi
+app_global_put
+int 1
+return
+main_l32:
+txn Sender
+global CreatorAddress
+==
+return
+main_l33:
+txn Sender
+global CreatorAddress
+==
+return
+main_l34:
+int 1
+return
+main_l35:
+txn Sender
+byte "algo_balance"
+int 0
+app_local_put
+txn Sender
+byte "usdc_balance"
+int 0
+app_local_put
+txn Sender
+byte "usdt_balance"
+int 0
+app_local_put
+txn Sender
+byte "last_deposit"
+global LatestTimestamp
+app_local_put
+txn Sender
+byte "total_deposited"
+int 0
+app_local_put
+byte "total_users"
+byte "total_users"
+app_global_get
+int 1
++
+app_global_put
+int 1
+return
+main_l36:
+byte "total_users"
+int 0
+app_global_put
+byte "total_deposits"
+int 0
+app_global_put
+byte "usdc_asset_id"
+int 0
+app_global_put
+byte "usdt_asset_id"
+int 0
+app_global_put
+int 1
+return

@@ -1,0 +1,561 @@
+import { useState, useCallback } from 'react';
+import { useWallet as useAptosWallet } from '@aptos-labs/wallet-adapter-react';
+import { smartContractService } from '@/services/SmartContractService';
+import { apiService } from '@/services/ApiService';
+import { balanceService } from '@/services/BalanceService';
+import { Account, Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
+
+// Smart contract configuration
+const CONTRACT_ADDRESS = '0x851c087b280c6853667631d72147716d15276a7383608257ca9736eb01cd6af9';
+const MODULE_NAME = 'swap';
+
+// Remove the global window.aptos declaration since it conflicts with existing types
+
+export interface UseSmartContractVaultReturn {
+  isProcessing: boolean;
+  error: string | null;
+  
+  // Vault operations with smart contract integration
+  depositAPTtoVault: (amount: string, targetToken: 'USDC' | 'USDT') => Promise<boolean>;
+  depositAPTDirectToVault: (amount: string) => Promise<boolean>; // Direct APT deposit without conversion
+  depositTokenToVault: (amount: string, token: 'USDC' | 'USDT') => Promise<boolean>;
+  withdrawFromVault: (amount: string, sourceToken: 'APT' | 'USDC' | 'USDT') => Promise<boolean>;
+  
+  // Token minting for testing
+  mintTestTokens: (token: 'USDC' | 'USDT', amount: string) => Promise<boolean>;
+  
+  // Cross-token swaps
+  swapTokens: (fromToken: 'USDC' | 'USDT', toToken: 'USDC' | 'USDT', amount: string) => Promise<boolean>;
+  
+  // Arbitrage operations
+  executeArbitrage: (inputAmount: string, tokenPair: string) => Promise<boolean>;
+  
+  clearError: () => void;
+}
+
+export const useSmartContractVault = (): UseSmartContractVaultReturn => {
+  const { signAndSubmitTransaction, account: aptosAccount, connected } = useAptosWallet(); // Get the signing function from wallet adapter
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Convert account to our format
+  const account = aptosAccount ? {
+    address: aptosAccount.address.toString(),
+    publicKey: Array.isArray(aptosAccount.publicKey) 
+      ? aptosAccount.publicKey.map(pk => pk.toString())
+      : aptosAccount.publicKey.toString(),
+    ansName: aptosAccount.ansName || null
+  } : null;
+
+  // Helper to create Account object from wallet
+  const getAccountFromWallet = useCallback((): Account | null => {
+    if (!account?.address || !account?.publicKey) return null;
+    
+    try {
+      // For Petra wallet, we don't need to create an Account object
+      // The wallet will handle signing through the wallet adapter
+      return null; // Wallet adapter will handle signing
+    } catch (err) {
+      console.error('Error creating account:', err);
+      return null;
+    }
+  }, [account]);
+
+  // Helper to sign and submit transaction through wallet adapter
+  const submitTransaction = useCallback(async (transaction: any) => {
+    if (!account?.address || !signAndSubmitTransaction) {
+      throw new Error('Wallet not connected or signing not available');
+    }
+
+    try {
+      
+      // Use the wallet adapter's signAndSubmitTransaction method
+      const response = await signAndSubmitTransaction(transaction);
+      
+      
+      if (response?.hash) {
+        // Wait for transaction confirmation
+        const aptos = new Aptos(new AptosConfig({ network: Network.TESTNET }));
+        console.log('Waiting for transaction confirmation:', response.hash);
+        
+        await aptos.waitForTransaction({ transactionHash: response.hash });
+        console.log('Transaction confirmed:', response.hash);
+        
+        return { success: true, hash: response.hash };
+      } else {
+        throw new Error('Transaction failed - no hash returned');
+      }
+    } catch (err) {
+      console.error('Transaction signing error:', err);
+      throw err;
+    }
+  }, [account, signAndSubmitTransaction]);
+
+  // Deposit USDC/USDT directly to vault (burns from wallet)
+  const depositTokenToVault = useCallback(async (
+    amount: string,
+    token: 'USDC' | 'USDT'
+  ): Promise<boolean> => {
+    if (!connected || !account?.address) {
+      setError('Wallet not connected');
+      return false;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      // Convert amount to smallest unit (USDC/USDT have 6 decimals)
+      const tokenAmount = (parseFloat(amount) * Math.pow(10, 6)).toString();
+      
+
+      // Check wallet balance first
+      const walletBalance = await balanceService.fetchAllBalances(account.address);
+      const tokenBalance = parseFloat(walletBalance[token] || '0');
+      const depositAmountNum = parseFloat(amount);
+
+      if (depositAmountNum > tokenBalance) {
+        setError(`Insufficient ${token} balance. You have ${tokenBalance.toFixed(2)} ${token}`);
+        return false;
+      }
+
+      // Use the vault deposit functions that properly burn tokens
+      const transaction = {
+        data: {
+          function: token === 'USDC'
+            ? `${CONTRACT_ADDRESS}::${MODULE_NAME}::deposit_usdc_to_vault`
+            : `${CONTRACT_ADDRESS}::${MODULE_NAME}::deposit_usdt_to_vault`,
+          functionArguments: [tokenAmount],
+        },
+      };
+
+
+      const result = await submitTransaction(transaction);
+
+      if (result.success && result.hash) {
+
+        // Update vault balance in backend
+        await apiService.depositToVault(
+          account.address,
+          token,
+          tokenAmount,
+          result.hash
+        );
+
+        return true;
+      } else {
+        setError(`${token} vault deposit transaction failed`);
+        return false;
+      }
+    } catch (err) {
+      console.error(`❌ ${token} vault deposit error:`, err);
+      setError(err instanceof Error ? err.message : `${token} vault deposit failed`);
+      return false;
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [connected, account, submitTransaction]);
+
+  // Deposit APT directly to vault (without conversion to USDC/USDT)
+  const depositAPTDirectToVault = useCallback(async (
+    amount: string
+  ): Promise<boolean> => {
+    if (!connected || !account?.address) {
+      setError('Wallet not connected');
+      return false;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      // Convert amount to smallest unit (APT has 8 decimals)
+      const aptAmount = (parseFloat(amount) * Math.pow(10, 8)).toString();
+      
+
+      // Check wallet balance first
+      const walletBalance = await balanceService.fetchAPTBalance(account.address);
+      const aptBalance = parseFloat(walletBalance || '0');
+      const depositAmountNum = parseFloat(amount);
+
+      if (depositAmountNum > aptBalance) {
+        setError(`Insufficient APT balance. You have ${aptBalance.toFixed(4)} APT`);
+        return false;
+      }
+
+      // Use the direct APT vault deposit function
+      const transaction = {
+        data: {
+          function: `${CONTRACT_ADDRESS}::${MODULE_NAME}::deposit_apt_to_vault`,
+          functionArguments: [aptAmount],
+        },
+      };
+
+
+      const result = await submitTransaction(transaction);
+
+      if (result.success && result.hash) {
+
+        // Update vault balance in backend - record as APT
+        await apiService.depositToVault(
+          account.address,
+          'APT',
+          aptAmount,
+          result.hash
+        );
+
+        return true;
+      } else {
+        setError('APT vault deposit transaction failed');
+        return false;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'APT vault deposit failed');
+      return false;
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [connected, account, submitTransaction]);
+
+  // Deposit APT to vault (converts APT to USDC/USDT via smart contract)
+  const depositAPTtoVault = useCallback(async (
+    amount: string, 
+    targetToken: 'USDC' | 'USDT'
+  ): Promise<boolean> => {
+    if (!connected || !account?.address) {
+      setError('Wallet not connected');
+      return false;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      // Convert amount to smallest unit (APT has 8 decimals)
+      const aptAmount = (parseFloat(amount) * Math.pow(10, 8)).toString();
+      
+
+      // Call smart contract to swap APT to USDC/USDT
+      // This should consume APT from wallet and mint USDC/USDT
+      const transaction = {
+        type: "entry_function_payload",
+        function: targetToken === 'USDC' 
+          ? `${CONTRACT_ADDRESS}::${MODULE_NAME}::swap_apt_to_usdc`
+          : `${CONTRACT_ADDRESS}::${MODULE_NAME}::swap_apt_to_usdt`,
+        arguments: [aptAmount],
+        type_arguments: [],
+      };
+
+
+      const result = await submitTransaction(transaction);
+
+      if (result.success && result.hash) {
+
+        // Calculate expected output amount
+        const targetAmount = await calculateSwapOutput(aptAmount, 'APT', targetToken);
+        
+
+        // Update vault balance in backend - record as the target token (USDC/USDT)
+        await apiService.depositToVault(
+          account.address,
+          targetToken,
+          targetAmount,
+          result.hash
+        );
+
+        return true;
+      } else {
+        setError('Smart contract transaction failed');
+        return false;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'APT deposit failed');
+      return false;
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [connected, account, submitTransaction]);
+
+  // Withdraw from vault (mints tokens to wallet or transfers APT)
+  const withdrawFromVault = useCallback(async (
+    amount: string, 
+    sourceToken: 'APT' | 'USDC' | 'USDT'
+  ): Promise<boolean> => {
+    if (!connected || !account?.address) {
+      setError('Wallet not connected');
+      return false;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      // Convert amount to smallest unit
+      const decimals = sourceToken === 'APT' ? 8 : 6;
+      const tokenAmount = (parseFloat(amount) * Math.pow(10, decimals)).toString();
+      
+
+      // First, check vault balance from backend
+      const vaultResponse = await apiService.getUserVault(account.address);
+      if (!vaultResponse.success || !vaultResponse.data) {
+        setError('Failed to fetch vault balance');
+        return false;
+      }
+
+      const vaultBalance = vaultResponse.data.balances.find(
+        b => b.coinSymbol === sourceToken
+      );
+      const currentBalance = BigInt(vaultBalance?.balance || '0');
+      const withdrawAmountBigInt = BigInt(tokenAmount);
+
+      if (currentBalance < withdrawAmountBigInt) {
+        const formattedBalance = (Number(currentBalance) / Math.pow(10, decimals)).toFixed(decimals === 8 ? 4 : 2);
+        setError(`Insufficient vault balance. You have ${formattedBalance} ${sourceToken}`);
+        return false;
+      }
+
+      // Use the appropriate vault withdrawal function
+      let functionName: string;
+      if (sourceToken === 'APT') {
+        functionName = `${CONTRACT_ADDRESS}::${MODULE_NAME}::withdraw_apt_from_vault`;
+      } else if (sourceToken === 'USDC') {
+        functionName = `${CONTRACT_ADDRESS}::${MODULE_NAME}::withdraw_usdc_from_vault`;
+      } else {
+        functionName = `${CONTRACT_ADDRESS}::${MODULE_NAME}::withdraw_usdt_from_vault`;
+      }
+
+      const transaction = {
+        data: {
+          function: functionName,
+          functionArguments: [tokenAmount],
+        },
+      };
+
+
+      // Sign and submit through wallet
+      const result = await submitTransaction(transaction);
+
+      if (result.success && result.hash) {
+
+        // Update vault balance in backend
+        await apiService.withdrawFromVault(
+          account.address,
+          sourceToken,
+          tokenAmount,
+          result.hash
+        );
+
+        return true;
+      } else {
+        setError(`${sourceToken} vault withdrawal transaction failed`);
+        return false;
+      }
+    } catch (err) {
+      console.error(`❌ ${sourceToken} vault withdrawal error:`, err);
+      setError(err instanceof Error ? err.message : `${sourceToken} vault withdrawal failed`);
+      return false;
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [connected, account, submitTransaction]);
+
+  // Mint test tokens (for testing purposes)
+  const mintTestTokens = useCallback(async (
+    token: 'USDC' | 'USDT', 
+    amount: string
+  ): Promise<boolean> => {
+    if (!connected || !account?.address) {
+      setError('Wallet not connected');
+      return false;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      // Convert amount to smallest unit
+      const tokenAmount = (parseFloat(amount) * Math.pow(10, 6)).toString();
+      
+      // Create transaction data
+      const transaction = {
+        type: "entry_function_payload",
+        function: token === 'USDC'
+          ? `${CONTRACT_ADDRESS}::${MODULE_NAME}::mint_usdc`
+          : `${CONTRACT_ADDRESS}::${MODULE_NAME}::mint_usdt`,
+        arguments: [tokenAmount],
+        type_arguments: [],
+      };
+
+      // Sign and submit through wallet
+      const result = await submitTransaction(transaction);
+
+      if (result.success) {
+        // Refresh balances after minting
+        await balanceService.refreshBalances(account.address);
+        return true;
+      } else {
+        setError('Minting failed');
+        return false;
+      }
+    } catch (err) {
+      console.error('Mint error:', err);
+      setError(err instanceof Error ? err.message : 'Minting failed');
+      return false;
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [connected, account, submitTransaction]);
+
+  // Swap between USDC and USDT
+  const swapTokens = useCallback(async (
+    fromToken: 'USDC' | 'USDT', 
+    toToken: 'USDC' | 'USDT', 
+    amount: string
+  ): Promise<boolean> => {
+    if (!connected || !account?.address || fromToken === toToken) {
+      setError('Invalid swap parameters');
+      return false;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const tokenAmount = (parseFloat(amount) * Math.pow(10, 6)).toString();
+      
+      // Create transaction data
+      const transaction = {
+        type: "entry_function_payload",
+        function: fromToken === 'USDC' && toToken === 'USDT'
+          ? `${CONTRACT_ADDRESS}::${MODULE_NAME}::swap_usdc_to_usdt`
+          : `${CONTRACT_ADDRESS}::${MODULE_NAME}::swap_usdt_to_usdc`,
+        arguments: [tokenAmount],
+        type_arguments: [],
+      };
+
+      // Sign and submit through wallet
+      const result = await submitTransaction(transaction);
+
+      if (result.success) {
+        // Refresh balances after swap
+        await balanceService.refreshBalances(account.address);
+        return true;
+      } else {
+        setError('Swap failed');
+        return false;
+      }
+    } catch (err) {
+      console.error('Swap error:', err);
+      setError(err instanceof Error ? err.message : 'Swap failed');
+      return false;
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [connected, account, submitTransaction]);
+
+  // Execute arbitrage
+  const executeArbitrage = useCallback(async (
+    inputAmount: string, 
+    tokenPair: string
+  ): Promise<boolean> => {
+    if (!connected || !account?.address) {
+      setError('Wallet not connected');
+      return false;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      // Check profitability first
+      const profitCheck = await smartContractService.checkProfitability(inputAmount);
+      
+      if (!profitCheck?.profitable) {
+        setError('Arbitrage not profitable');
+        return false;
+      }
+
+      const expectedOutput = (parseFloat(inputAmount) + parseFloat(profitCheck.profit)).toString();
+      
+      const result = await smartContractService.executeArbitrage(
+        getAccountFromWallet()!,
+        inputAmount,
+        expectedOutput,
+        tokenPair
+      );
+
+      if (result.success) {
+        return true;
+      } else {
+        setError(result.error || 'Arbitrage execution failed');
+        return false;
+      }
+    } catch (err) {
+      console.error('Arbitrage error:', err);
+      setError(err instanceof Error ? err.message : 'Arbitrage failed');
+      return false;
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [connected, account]);
+
+  // Helper function to calculate swap output based on smart contract rates
+  const calculateSwapOutput = async (
+    inputAmount: string, 
+    fromToken: string, 
+    toToken: string
+  ): Promise<string> => {
+    try {
+      // inputAmount is already in smallest units
+      const inputInSmallestUnits = BigInt(inputAmount);
+      let outputInSmallestUnits = 0n;
+
+
+      if (fromToken === 'APT' && toToken === 'USDC') {
+        // APT to USDC: rate = 8000000 / 100000000 = 0.08 USDC per APT
+        // Input is in APT smallest units (8 decimals), output should be in USDC smallest units (6 decimals)
+        outputInSmallestUnits = (inputInSmallestUnits * 8000000n) / 100000000n;
+      } else if (fromToken === 'APT' && toToken === 'USDT') {
+        // APT to USDT: rate = 8050000 / 100000000 = 0.08050 USDT per APT
+        outputInSmallestUnits = (inputInSmallestUnits * 8050000n) / 100000000n;
+      } else if (fromToken === 'USDC' && toToken === 'APT') {
+        // USDC to APT: rate = 12500000 / 1000000 = 12.5 APT per USDC
+        // Input is in USDC smallest units (6 decimals), output should be in APT smallest units (8 decimals)
+        outputInSmallestUnits = (inputInSmallestUnits * 12500000n) / 1000000n;
+      } else if (fromToken === 'USDT' && toToken === 'APT') {
+        // USDT to APT: rate = 12400000 / 1000000 = 12.4 APT per USDT
+        outputInSmallestUnits = (inputInSmallestUnits * 12400000n) / 1000000n;
+      } else if (fromToken === 'USDC' && toToken === 'USDT') {
+        // USDC to USDT: rate = 9995 / 10000 = 0.9995
+        outputInSmallestUnits = (inputInSmallestUnits * 9995n) / 10000n;
+      } else if (fromToken === 'USDT' && toToken === 'USDC') {
+        // USDT to USDC: rate = 9995 / 10000 = 0.9995
+        outputInSmallestUnits = (inputInSmallestUnits * 9995n) / 10000n;
+      }
+
+      const result = outputInSmallestUnits.toString();
+      
+      return result;
+    } catch (err) {
+      console.error('Calculate swap output error:', err);
+      return '0';
+    }
+  };
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  return {
+    isProcessing,
+    error,
+    depositAPTtoVault,
+    depositAPTDirectToVault,
+    depositTokenToVault,
+    withdrawFromVault,
+    mintTestTokens,
+    swapTokens,
+    executeArbitrage,
+    clearError
+  };
+};
