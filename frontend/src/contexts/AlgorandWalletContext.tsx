@@ -58,6 +58,8 @@ interface AlgorandWalletContextType {
     withdrawFromVault: (amount: string, sourceToken: 'ALGO' | 'USDC' | 'USDT') => Promise<boolean>;
     swapTokens: (fromToken: string, toToken: string, amount: string) => Promise<boolean>;
     executeArbitrage: (inputAmount: string, tokenPair: string) => Promise<boolean>;
+    optInToAsset: (assetId: number, assetName: string) => Promise<boolean>;
+    optInToApp: () => Promise<boolean>;
     clearError: () => void;
   };
   
@@ -268,12 +270,9 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       const encodedTxns = txns.map(txn => algosdk.encodeUnsignedTransaction(txn));
       const signedTxns = await signTransactions(encodedTxns);
       
-      // Send transactions
-      for (const signedTxn of signedTxns) {
-        if (signedTxn) {
-          await algodClient.sendRawTransaction(signedTxn).do();
-        }
-      }
+      // Send all transactions as a group
+      const signedTxnBytes = signedTxns.filter(txn => txn !== null);
+      await algodClient.sendRawTransaction(signedTxnBytes).do();
 
       await refreshBalances();
       return true;
@@ -325,12 +324,14 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       const encodedTxns = txns.map(txn => algosdk.encodeUnsignedTransaction(txn));
       const signedTxns = await signTransactions(encodedTxns);
       
-      // Send transactions
-      for (const signedTxn of signedTxns) {
-        if (signedTxn) {
-          await algodClient.sendRawTransaction(signedTxn).do();
-        }
-      }
+      // Send all transactions as a group
+      const signedTxnBytes = signedTxns.filter(txn => txn !== null);
+      const txResult = await algodClient.sendRawTransaction(signedTxnBytes).do();
+
+      // Wait for confirmation
+      await algosdk.waitForConfirmation(algodClient, txResult.txId, 4);
+
+      console.log(`✅ Deposited ${amount} ${token} to vault`);
 
       await refreshBalances();
       return true;
@@ -471,6 +472,121 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
     setError(null);
   };
 
+  // Opt-in to an asset
+  const optInToAsset = async (assetId: number, assetName: string): Promise<boolean> => {
+    if (!account?.address || !activeWallet || !algodClient) {
+      setError('Wallet not connected');
+      return false;
+    }
+
+    try {
+      setIsProcessing(true);
+      setError(null);
+
+      // Check if already opted in
+      const accountInfo = await algodClient.accountInformation(account.address).do();
+      const assets = accountInfo.assets || [];
+      const alreadyOptedIn = assets.some((asset: any) => asset['asset-id'] === assetId);
+
+      if (alreadyOptedIn) {
+        console.log(`✅ Already opted into ${assetName}`);
+        setError(`Already opted into ${assetName}`);
+        return true; // Return true since the goal is achieved
+      }
+
+      const params = await algodClient.getTransactionParams().do();
+
+      // Create asset opt-in transaction (amount = 0, send to self)
+      const optInTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
+        from: account.address,
+        to: account.address,
+        amount: 0,
+        assetIndex: assetId,
+        suggestedParams: params
+      });
+
+      // Sign and send
+      const encodedTxn = algosdk.encodeUnsignedTransaction(optInTxn);
+      const signedTxns = await signTransactions([encodedTxn]);
+      
+      if (signedTxns[0]) {
+        const txResult = await algodClient.sendRawTransaction(signedTxns[0]).do();
+        await algosdk.waitForConfirmation(algodClient, txResult.txId, 4);
+        console.log(`✅ Opted into ${assetName} (Asset ID: ${assetId})`);
+      }
+
+      await refreshBalances();
+      return true;
+    } catch (err: any) {
+      const errorMsg = err.message || `Failed to opt-in to ${assetName}`;
+      // Check if error is about already opted in
+      if (errorMsg.includes('already opted in') || errorMsg.includes('has already opted')) {
+        console.log(`✅ Already opted into ${assetName}`);
+        return true;
+      }
+      setError(errorMsg);
+      return false;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Opt-in to the vault app
+  const optInToApp = async (): Promise<boolean> => {
+    if (!account?.address || !activeWallet || !algodClient) {
+      setError('Wallet not connected');
+      return false;
+    }
+
+    try {
+      setIsProcessing(true);
+      setError(null);
+
+      // Check if already opted in
+      const accountInfo = await algodClient.accountInformation(account.address).do();
+      const apps = accountInfo['apps-local-state'] || [];
+      const alreadyOptedIn = apps.some((app: any) => app.id === APP_ID);
+
+      if (alreadyOptedIn) {
+        console.log(`✅ Already opted into Vault contract`);
+        setError('Already opted into Vault contract');
+        return true; // Return true since the goal is achieved
+      }
+
+      const params = await algodClient.getTransactionParams().do();
+
+      // Create app opt-in transaction
+      const optInTxn = algosdk.makeApplicationOptInTxnFromObject({
+        from: account.address,
+        appIndex: APP_ID,
+        suggestedParams: params
+      });
+
+      // Sign and send
+      const encodedTxn = algosdk.encodeUnsignedTransaction(optInTxn);
+      const signedTxns = await signTransactions([encodedTxn]);
+      
+      if (signedTxns[0]) {
+        const txResult = await algodClient.sendRawTransaction(signedTxns[0]).do();
+        await algosdk.waitForConfirmation(algodClient, txResult.txId, 4);
+        console.log(`✅ Opted into Vault contract (App ID: ${APP_ID})`);
+      }
+
+      return true;
+    } catch (err: any) {
+      const errorMsg = err.message || 'Failed to opt-in to Vault';
+      // Check if error is about already opted in
+      if (errorMsg.includes('already opted in') || errorMsg.includes('has already opted')) {
+        console.log(`✅ Already opted into Vault contract`);
+        return true;
+      }
+      setError(errorMsg);
+      return false;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Effect to fetch balances when account changes
   useEffect(() => {
     if (connected && account?.address) {
@@ -511,6 +627,8 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       withdrawFromVault,
       swapTokens,
       executeArbitrage,
+      optInToAsset,
+      optInToApp,
       clearError
     },
     error,

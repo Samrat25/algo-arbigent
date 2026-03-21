@@ -58,6 +58,15 @@ const Dashboard = () => {
   const [notificationMessage, setNotificationMessage] = useState('');
   const [notificationType, setNotificationType] = useState<'success' | 'info' | 'profit' | 'loss'>('info');
 
+  // Token balances state
+  const [tokenBalances, setTokenBalances] = useState<Array<{
+    token: string;
+    vaultBalance: string;
+    walletBalance: string;
+    vaultUsd: string;
+    walletUsd: string;
+  }>>([]);
+
   // Use ref to avoid dependency issues
   const arbitrageStatsRef = useRef<any>(null);
 
@@ -123,6 +132,51 @@ const Dashboard = () => {
   useEffect(() => {
     fetchArbitrageStats();
   }, [fetchArbitrageStats]);
+
+  // Fetch token balances
+  const fetchTokenBalances = useCallback(async () => {
+    if (!connected || !account?.address || !vault) return;
+
+    try {
+      // Fetch wallet balances from backend
+      const walletResponse = await fetch(`http://localhost:3001/api/balance/${account.address}`);
+      const walletData = await walletResponse.json();
+
+      const balances = ['ALGO', 'USDC', 'USDT'].map(symbol => {
+        // Get vault balance
+        const vaultBalance = vault.balances.find(b => b.coinSymbol.toUpperCase() === symbol);
+        const decimals = 6;
+        const rawVaultBalance = vaultBalance ? parseFloat(vaultBalance.balance) : 0;
+        const formattedVaultBalance = rawVaultBalance / Math.pow(10, decimals);
+
+        // Get wallet balance
+        const walletBalance = walletData.success && walletData.balances
+          ? parseFloat(walletData.balances[symbol] || '0')
+          : 0;
+
+        // Get price
+        const price = tokenPrices[symbol]?.price || '$0.00';
+        const priceNum = parseFloat(price.replace('$', '').replace(',', '')) || 0;
+
+        return {
+          token: symbol,
+          vaultBalance: formattedVaultBalance.toFixed(symbol === 'ALGO' ? 4 : 2),
+          walletBalance: walletBalance.toFixed(symbol === 'ALGO' ? 4 : 2),
+          vaultUsd: (formattedVaultBalance * priceNum).toFixed(2),
+          walletUsd: (walletBalance * priceNum).toFixed(2)
+        };
+      });
+
+      setTokenBalances(balances);
+    } catch (error) {
+      console.error('Failed to fetch token balances:', error);
+    }
+  }, [connected, account?.address, vault, tokenPrices]);
+
+  // Fetch token balances when vault or prices change
+  useEffect(() => {
+    fetchTokenBalances();
+  }, [fetchTokenBalances]);
 
   // Set wallet address when account changes
   useEffect(() => {
@@ -328,6 +382,56 @@ const Dashboard = () => {
               isLoading={marketLoading}
             />
           </div>
+
+          {/* Token Balances Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="mb-8"
+          >
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="font-display text-xl font-bold tracking-wide text-foreground mb-6 flex items-center gap-2">
+                <Wallet className="h-5 w-5 text-primary" />
+                TOKEN BALANCES
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {tokenBalances.map((balance) => (
+                  <div 
+                    key={balance.token}
+                    className="p-5 rounded-lg bg-muted/30 border border-border hover:border-primary/50 transition-all duration-300"
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <CryptoLogo symbol={balance.token} size="md" />
+                      <div>
+                        <h3 className="font-mono text-lg font-bold text-foreground">{balance.token}</h3>
+                        <p className="text-xs text-muted-foreground">Vault</p>
+                      </div>
+                    </div>
+                    
+                    {/* Vault Balance */}
+                    <div className="mb-4 pb-4 border-b border-border/50">
+                      <div className="flex items-baseline justify-between mb-1">
+                        <span className="font-mono text-2xl font-bold text-primary">{balance.vaultBalance}</span>
+                        <span className="text-xs text-muted-foreground">$0.00</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">${balance.vaultUsd}</p>
+                    </div>
+                    
+                    {/* Wallet Balance */}
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">Wallet Balance</p>
+                      <div className="flex items-baseline justify-between">
+                        <span className="font-mono text-lg font-semibold text-foreground">{balance.walletBalance}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">${balance.walletUsd}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
 
           {/* Quick Actions */}
           {/* <motion.div

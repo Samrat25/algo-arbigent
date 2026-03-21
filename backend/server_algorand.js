@@ -175,6 +175,64 @@ app.get('/api/balance/:address', async (req, res) => {
 
 // ============= VAULT API ENDPOINTS =============
 
+// Mint tokens to user wallet
+app.post('/api/mint-tokens', async (req, res) => {
+  try {
+    const { address, token, amount } = req.body;
+    
+    if (!address || !token || !amount) {
+      return res.status(400).json({ error: 'Address, token, and amount are required' });
+    }
+
+    if (!algosdk.isValidAddress(address)) {
+      return res.status(400).json({ error: 'Invalid Algorand address' });
+    }
+
+    const tokenUpper = token.toUpperCase();
+    if (tokenUpper !== 'USDC' && tokenUpper !== 'USDT') {
+      return res.status(400).json({ error: 'Only USDC and USDT can be minted' });
+    }
+
+    const assetId = tokenUpper === 'USDC' ? USDC_ASSET_ID : USDT_ASSET_ID;
+    const amountMicro = parseInt(amount);
+
+    // Get suggested params
+    const params = await algodClient.getTransactionParams().do();
+
+    // Create asset transfer transaction from faucet to user
+    const txn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
+      from: faucetAccount.addr,
+      to: address,
+      amount: amountMicro,
+      assetIndex: assetId,
+      suggestedParams: params
+    });
+
+    // Sign transaction
+    const signedTxn = txn.signTxn(faucetAccount.sk);
+
+    // Send transaction
+    const { txId } = await algodClient.sendRawTransaction(signedTxn).do();
+
+    // Wait for confirmation
+    await algosdk.waitForConfirmation(algodClient, txId, 4);
+
+    res.json({
+      success: true,
+      txHash: txId,
+      amount: amountMicro / 1000000,
+      token: tokenUpper,
+      message: `Minted ${amountMicro / 1000000} ${tokenUpper} to ${address}`,
+    });
+
+  } catch (error) {
+    console.error('Mint tokens error:', error);
+    res.status(500).json({ 
+      error: error.message || 'Failed to mint tokens' 
+    });
+  }
+});
+
 // Get or create user profile
 app.post('/user/profile', async (req, res) => {
   try {
@@ -209,7 +267,58 @@ app.get('/vault/:walletAddress', async (req, res) => {
       return res.status(400).json({ error: 'Wallet address is required' });
     }
     
+    // Get vault from database
     const vault = await Vault.findOrCreate(walletAddress);
+    
+    // Fetch actual balances from Algorand contract
+    try {
+      const accountInfo = await algodClient.accountInformation(walletAddress).do();
+      const appsLocalState = accountInfo['apps-local-state'] || [];
+      
+      // Find our app's local state
+      const appLocalState = appsLocalState.find(app => app.id === APP_ID);
+      
+      if (appLocalState) {
+        const keyValues = appLocalState['key-value'] || [];
+        
+        // Update vault balances from contract (set absolute values)
+        for (const kv of keyValues) {
+          const key = Buffer.from(kv.key, 'base64').toString('utf-8');
+          const value = kv.value.uint || 0;
+          
+          let symbol = null;
+          if (key === 'algo_balance') symbol = 'ALGO';
+          else if (key === 'usdc_balance') symbol = 'USDC';
+          else if (key === 'usdt_balance') symbol = 'USDT';
+          
+          if (symbol) {
+            // Find or create balance entry
+            let balanceEntry = vault.balances.find(b => b.coinSymbol === symbol);
+            if (!balanceEntry) {
+              balanceEntry = {
+                coinSymbol: symbol,
+                balance: '0',
+                lockedBalance: '0',
+                earnedRewards: '0',
+                lastUpdated: new Date()
+              };
+              vault.balances.push(balanceEntry);
+            }
+            
+            // Set absolute value from contract
+            balanceEntry.balance = value.toString();
+            balanceEntry.lastUpdated = new Date();
+          }
+        }
+        
+        // Save updated vault
+        await vault.save();
+        console.log(`✅ Updated vault balances from contract for ${walletAddress}`);
+      }
+    } catch (contractError) {
+      console.warn('Could not fetch contract state:', contractError.message);
+      // Continue with database values
+    }
     
     res.json({
       success: true,
@@ -224,7 +333,7 @@ app.get('/vault/:walletAddress', async (req, res) => {
 // Deposit to vault
 app.post('/vault/deposit', async (req, res) => {
   try {
-    const { walletAddress, coinSymbol, amount, transactionHash } = req.body;
+    const { walletAddress, coinSymbol, amount, transactionHash, mintToWallet = false } = req.body;
     
     if (!walletAddress || !coinSymbol || !amount || !transactionHash) {
       return res.status(400).json({ 
@@ -241,6 +350,35 @@ app.post('/vault/deposit', async (req, res) => {
     
     const decimals = coin.decimals || (coinSymbol.toUpperCase() === 'ALGO' ? 6 : 6);
     const amountFormatted = parseFloat(amount) / Math.pow(10, decimals);
+    
+    // If mintToWallet is true, mint actual ASA tokens to user's wallet
+    let mintTxId = null;
+    if (mintToWallet && (coinSymbol.toUpperCase() === 'USDC' || coinSymbol.toUpperCase() === 'USDT')) {
+      try {
+        const assetId = coinSymbol.toUpperCase() === 'USDC' ? USDC_ASSET_ID : USDT_ASSET_ID;
+        const params = await algodClient.getTransactionParams().do();
+        
+        // Create asset transfer transaction from faucet to user
+        const mintTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
+          from: faucetAccount.addr,
+          to: walletAddress,
+          amount: parseInt(amount),
+          assetIndex: assetId,
+          suggestedParams: params
+        });
+        
+        // Sign and send
+        const signedMintTxn = mintTxn.signTxn(faucetAccount.sk);
+        const { txId } = await algodClient.sendRawTransaction(signedMintTxn).do();
+        await algosdk.waitForConfirmation(algodClient, txId, 4);
+        
+        mintTxId = txId;
+        console.log(`✅ Minted ${amountFormatted} ${coinSymbol} to ${walletAddress} (TxID: ${txId})`);
+      } catch (mintError) {
+        console.error('Minting error:', mintError);
+        // Continue with deposit even if minting fails
+      }
+    }
     
     const transactionLog = await TransactionLog.createLog({
       walletAddress,

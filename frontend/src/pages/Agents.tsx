@@ -18,9 +18,11 @@ import { useArbiGent } from "@/hooks/useArbiGent";
 import { RiskLevel } from "@/services/ArbiGentService";
 
 interface VaultTokenBalance {
-  token: 'APT' | 'USDC' | 'USDT';
+  token: 'APT' | 'USDC' | 'USDT' | 'ALGO';
   amount: string;
   usdValue: string;
+  walletAmount?: string; // NEW: Wallet balance
+  walletUsdValue?: string; // NEW: Wallet balance in USD
 }
 
 // Low-brightness animated background component (matches Vault.tsx style)
@@ -88,9 +90,9 @@ const Agents = () => {
   const fetchVaultBalances = useCallback(async () => {
     if (!connected || !account?.address) {
       setVaultBalances([
-        { token: "APT", amount: "0.0000", usdValue: "0.00" },
-        { token: "USDC", amount: "0.00", usdValue: "0.00" },
-        { token: "USDT", amount: "0.00", usdValue: "0.00" },
+        { token: "ALGO", amount: "0.0000", usdValue: "0.00", walletAmount: "0.0000", walletUsdValue: "0.00" },
+        { token: "USDC", amount: "0.00", usdValue: "0.00", walletAmount: "0.00", walletUsdValue: "0.00" },
+        { token: "USDT", amount: "0.00", usdValue: "0.00", walletAmount: "0.00", walletUsdValue: "0.00" },
       ]);
       setTotalUsdValue("0.00");
       return;
@@ -98,35 +100,48 @@ const Agents = () => {
 
     setIsLoadingVault(true);
     try {
-      const response = await apiService.getUserVault(account.address);
+      // Fetch vault balances from backend
+      const vaultResponse = await apiService.getUserVault(account.address);
       
-      if (response.success && response.data) {
+      // Fetch wallet balances from Algorand
+      const walletResponse = await fetch(`http://localhost:3001/api/balance/${account.address}`);
+      const walletData = await walletResponse.json();
+      
+      if (vaultResponse.success && vaultResponse.data) {
         let total = 0;
         const balances: VaultTokenBalance[] = [];
-        const agentBalances = { APT: 0, USDC: 0, USDT: 0 };
+        const agentBalances = { ALGO: 0, USDC: 0, USDT: 0 };
         
         // Process each token
-        ['APT', 'USDC', 'USDT'].forEach(symbol => {
-          const vaultBalance = response.data!.balances.find(
+        ['ALGO', 'USDC', 'USDT'].forEach(symbol => {
+          const vaultBalance = vaultResponse.data!.balances.find(
             b => b.coinSymbol.toUpperCase() === symbol
           );
           
-          const decimals = symbol === 'APT' ? 8 : 6;
-          const rawBalance = vaultBalance ? parseFloat(vaultBalance.balance) : 0;
-          const formattedBalance = rawBalance / Math.pow(10, decimals);
+          const decimals = 6;
+          const rawVaultBalance = vaultBalance ? parseFloat(vaultBalance.balance) : 0;
+          const formattedVaultBalance = rawVaultBalance / Math.pow(10, decimals);
           
-          // Calculate USD value using live prices
+          // Get wallet balance
+          const walletBalance = walletData.success && walletData.balances 
+            ? parseFloat(walletData.balances[symbol] || '0') 
+            : 0;
+          
+          // Calculate USD values using live prices
           const price = prices[symbol as keyof typeof prices] || 0;
-          const usdValue = formattedBalance * price;
-          total += usdValue;
+          const vaultUsdValue = formattedVaultBalance * price;
+          const walletUsdValue = walletBalance * price;
+          total += vaultUsdValue + walletUsdValue;
           
           balances.push({
-            token: symbol as 'APT' | 'USDC' | 'USDT',
-            amount: symbol === 'APT' ? formattedBalance.toFixed(4) : formattedBalance.toFixed(2),
-            usdValue: usdValue.toFixed(2)
+            token: symbol as 'ALGO' | 'USDC' | 'USDT',
+            amount: formattedVaultBalance.toFixed(symbol === 'ALGO' ? 4 : 2),
+            usdValue: vaultUsdValue.toFixed(2),
+            walletAmount: walletBalance.toFixed(symbol === 'ALGO' ? 4 : 2),
+            walletUsdValue: walletUsdValue.toFixed(2)
           });
           
-          agentBalances[symbol as keyof typeof agentBalances] = formattedBalance;
+          agentBalances[symbol as keyof typeof agentBalances] = formattedVaultBalance;
         });
         
         setVaultBalances(balances);
@@ -236,14 +251,27 @@ const Agents = () => {
                 {vaultBalances.map((balance) => (
                   <div 
                     key={balance.token} 
-                    className="p-4 rounded-lg bg-muted/50 border border-border"
+                    className="p-4 rounded-lg bg-muted/50 border border-border hover:border-primary/50 transition-colors"
                   >
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-3">
                       <CryptoLogo symbol={balance.token} size="sm" />
-                      <span className="font-mono text-sm text-muted-foreground">{balance.token}</span>
+                      <div className="flex flex-col">
+                        <span className="font-mono text-sm font-semibold text-foreground">{balance.token}</span>
+                        <span className="font-mono text-xs text-muted-foreground">Vault</span>
+                      </div>
                     </div>
-                    <p className="font-mono text-xl font-bold text-foreground">{balance.amount}</p>
-                    <p className="text-xs text-muted-foreground">${balance.usdValue}</p>
+                    
+                    {/* Vault Balance */}
+                    <div className="mb-3 pb-3 border-b border-border/50">
+                      <p className="font-mono text-xl font-bold text-foreground">{balance.amount}</p>
+                      <p className="text-xs text-muted-foreground">${balance.usdValue}</p>
+                    </div>
+                    
+                    {/* Wallet Balance */}
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Wallet: {balance.walletAmount || '0.00'}</p>
+                      <p className="text-xs text-muted-foreground">${balance.walletUsdValue || '0.00'}</p>
+                    </div>
                   </div>
                 ))}
               </div>
