@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAlgorandWallet } from '@/contexts/AlgorandWalletContext';
 import { WalletConnecting } from '@/components/LoadingStates';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +18,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { connected, connecting, error, clearError, wallets } = useAlgorandWallet();
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [hasCheckedConnection, setHasCheckedConnection] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
   const defaultWallet = wallets[0]?.name || 'Pera';
 
   // Clear any existing errors when the component mounts
@@ -25,6 +29,18 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       clearError();
     }
   }, []);
+
+  // Handle connection state changes
+  useEffect(() => {
+    if (!connecting) {
+      setHasCheckedConnection(true);
+    }
+
+    // If connected and we're on a protected route, ensure we stay there
+    if (connected && hasCheckedConnection) {
+      console.log('ProtectedRoute: Wallet connected, rendering protected content');
+    }
+  }, [connected, connecting, hasCheckedConnection]);
 
   // If wallet is connecting, show loading state
   if (connecting) {
@@ -38,8 +54,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // If wallet is not connected, show connection prompt
-  if (!connected) {
+  // If wallet is not connected and we've checked, show connection prompt
+  if (!connected && hasCheckedConnection) {
     return (
       <>
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -69,7 +85,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
                 
                 <Button 
                   variant="outline" 
-                  onClick={() => window.location.href = redirectTo}
+                  onClick={() => navigate(redirectTo)}
                   className="w-full"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
@@ -94,7 +110,19 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // If wallet is connected, render the protected content
-  return <>{children}</>;
+  if (connected) {
+    return <>{children}</>;
+  }
+
+  // Still checking connection state
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <WalletConnecting 
+        walletName={defaultWallet}
+        className="w-full max-w-md"
+      />
+    </div>
+  );
 };
 
 export default ProtectedRoute;

@@ -141,16 +141,23 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       console.log('Connecting to wallet:', walletId);
       await selectedWallet.connect();
       
-      // Wait a bit for the connection to be established
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait for the connection to be fully established
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Verify connection was successful
+      if (!selectedWallet.isActive) {
+        throw new Error('Wallet connection failed - wallet not active');
+      }
       
       localStorage.setItem('wallet_connected', 'true');
       localStorage.setItem('wallet_id', selectedWallet.id);
       
-      console.log('Wallet connected successfully');
+      console.log('Wallet connected successfully, active:', selectedWallet.isActive);
     } catch (err: any) {
       console.error('Connection error:', err);
       setError(err.message || 'Failed to connect wallet');
+      localStorage.removeItem('wallet_connected');
+      localStorage.removeItem('wallet_id');
       throw err;
     } finally {
       setConnecting(false);

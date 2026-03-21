@@ -56,13 +56,15 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
       console.log('WalletModal: Connecting to', walletId);
       await connect(walletId);
       console.log('WalletModal: Connection successful');
+      
+      // Wait a bit longer for state to propagate
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       onOpenChange(false);
       
       // Navigate to dashboard after successful connection
-      setTimeout(() => {
-        console.log('WalletModal: Navigating to dashboard');
-        navigate('/dashboard');
-      }, 500);
+      console.log('WalletModal: Navigating to dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       console.error('WalletModal: Connection error:', err);
       setSelectedWallet(null);
