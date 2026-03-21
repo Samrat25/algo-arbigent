@@ -54,6 +54,22 @@ def approval_program():
         Approve()
     ])
     
+    # Opt-in contract to an asset (must be called by creator)
+    optin_asset = Seq([
+        Assert(Txn.sender() == Global.creator_address()),
+        Assert(Txn.assets.length() > Int(0)),
+        InnerTxnBuilder.Begin(),
+        InnerTxnBuilder.SetFields({
+            TxnField.type_enum: TxnType.AssetTransfer,
+            TxnField.asset_receiver: Global.current_application_address(),
+            TxnField.asset_amount: Int(0),
+            TxnField.xfer_asset: Txn.assets[0],
+            TxnField.fee: Global.min_txn_fee()
+        }),
+        InnerTxnBuilder.Submit(),
+        Approve()
+    ])
+    
     # Deposit ALGO to vault
     deposit_algo = Seq([
         Assert(Gtxn[0].type_enum() == TxnType.Payment),
@@ -271,6 +287,7 @@ def approval_program():
         [Txn.on_completion() == OnComplete.DeleteApplication, Return(Txn.sender() == Global.creator_address())],
         [Txn.application_args[0] == Bytes("set_usdc"), set_usdc_asset],
         [Txn.application_args[0] == Bytes("set_usdt"), set_usdt_asset],
+        [Txn.application_args[0] == Bytes("optin_asset"), optin_asset],
         [Txn.application_args[0] == Bytes("deposit_algo"), deposit_algo],
         [Txn.application_args[0] == Bytes("withdraw_algo"), withdraw_algo],
         [Txn.application_args[0] == Bytes("deposit_usdc"), deposit_usdc],
@@ -302,6 +319,6 @@ if __name__ == "__main__":
         compiled = compileTeal(clear_state_program(), mode=Mode.Application, version=8)
         f.write(compiled)
     
-    print("✅ Contract compiled successfully!")
+    print("Contract compiled successfully!")
     print("   - vault_approval.teal")
     print("   - vault_clear.teal")
