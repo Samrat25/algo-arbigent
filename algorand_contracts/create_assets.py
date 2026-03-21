@@ -134,7 +134,7 @@ def main():
     print(f"\n🔑 Account: {address}")
     
     # Check balance
-    account_info = algod_client.account_information(address)
+    account_info = algod_client.account_info(address)
     balance = account_info['amount'] / 1_000_000
     print(f"💰 Balance: {balance} ALGO")
     
