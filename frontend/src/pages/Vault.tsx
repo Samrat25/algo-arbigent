@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Download, Upload, Wallet, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, Download, Upload, Wallet, CheckCircle, AlertCircle, RefreshCw, ExternalLink, Clock } from "lucide-react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +11,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import CryptoLogo from "@/components/CryptoLogo";
+import { API_CONFIG } from '@/config/walletConfig';
 
 const USDC_ASSET_ID = parseInt(import.meta.env.VITE_USDC_ASSET_ID || '0');
 const USDT_ASSET_ID = parseInt(import.meta.env.VITE_USDT_ASSET_ID || '0');
+
+interface Transaction {
+  _id: string;
+  transactionHash: string;
+  type: string;
+  status: string;
+  coinSymbol: string;
+  amountFormatted: number;
+  timestamp: string;
+}
 
 const Vault = () => {
   const { account, connected, balances, smartContract } = useAlgorandWallet();
@@ -23,11 +34,32 @@ const Vault = () => {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [showOptInSection, setShowOptInSection] = useState(true);
   const [optInSuccess, setOptInSuccess] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
+
+  // Fetch transaction history
+  const fetchTransactions = async () => {
+    if (!account?.address) return;
+    
+    setLoadingTransactions(true);
+    try {
+      const response = await fetch(`${API_CONFIG.backendUrl}/transactions/${account.address}?limit=10`);
+      if (response.ok) {
+        const data = await response.json();
+        setTransactions(data.transactions || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch transactions:', error);
+    } finally {
+      setLoadingTransactions(false);
+    }
+  };
 
   // Refresh vault on mount and after transactions
   useEffect(() => {
     if (connected && account?.address) {
       refreshVault();
+      fetchTransactions();
     }
   }, [connected, account?.address, refreshVault]);
 
@@ -81,8 +113,11 @@ const Vault = () => {
       
       if (success) {
         setDepositAmount("");
-        // Refresh vault balance after deposit
-        setTimeout(() => refreshVault(), 2000);
+        // Refresh vault balance and transactions after deposit
+        setTimeout(() => {
+          refreshVault();
+          fetchTransactions();
+        }, 2000);
       }
     } catch (err) {
       console.error('Deposit error:', err);
@@ -96,8 +131,11 @@ const Vault = () => {
       const success = await smartContract.withdrawFromVault(withdrawAmount, selectedToken);
       if (success) {
         setWithdrawAmount("");
-        // Refresh vault balance after withdraw
-        setTimeout(() => refreshVault(), 2000);
+        // Refresh vault balance and transactions after withdraw
+        setTimeout(() => {
+          refreshVault();
+          fetchTransactions();
+        }, 2000);
       }
     } catch (err) {
       console.error('Withdraw error:', err);
@@ -406,6 +444,120 @@ const Vault = () => {
               <p>• Minimum balance requirements apply for Algorand accounts</p>
               <p>• Transaction fees are approximately 0.001 ALGO per transaction</p>
               <p>• Connected to Algorand Testnet</p>
+            </CardContent>
+          </Card>
+
+          {/* Transaction History */}
+          <Card className="mt-6">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Transaction History</CardTitle>
+                <CardDescription>Recent vault transactions</CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={fetchTransactions}
+                disabled={loadingTransactions}
+              >
+                <RefreshCw className={`h-4 w-4 ${loadingTransactions ? 'animate-spin' : ''}`} />
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {loadingTransactions ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
+                  Loading transactions...
+                </div>
+              ) : transactions.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  No transactions yet
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {transactions.map((tx) => {
+                    // Check if this is a mocked profit transaction
+                    const isProfitClaim = tx.transactionHash.startsWith('PROFIT-');
+                    
+                    // Extract base transaction ID (remove suffixes like -123456 for deposits)
+                    let baseTxHash = tx.transactionHash;
+                    if (!isProfitClaim && baseTxHash.includes('-')) {
+                      // Remove timestamp suffix but keep the real TxID
+                      baseTxHash = baseTxHash.split('-')[0];
+                    }
+                    
+                    const displayTxHash = isProfitClaim 
+                      ? tx.transactionHash.substring(7) // Remove 'PROFIT-' prefix
+                      : baseTxHash;
+                    
+                    return (
+                      <div
+                        key={tx._id}
+                        className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-full ${
+                            isProfitClaim 
+                              ? 'bg-yellow-500/10'
+                              : tx.type === 'deposit' 
+                                ? 'bg-green-500/10' 
+                                : 'bg-blue-500/10'
+                          }`}>
+                            {isProfitClaim ? (
+                              <span className="text-yellow-500 text-lg">💰</span>
+                            ) : tx.type === 'deposit' ? (
+                              <Download className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <Upload className="h-4 w-4 text-blue-500" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-semibold capitalize">
+                              {isProfitClaim ? 'Profit Claim' : tx.type}
+                              {isProfitClaim && (
+                                <span className="ml-2 text-xs bg-yellow-500/20 text-yellow-700 px-2 py-0.5 rounded">
+                                  Arbitrage Profit
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(tx.timestamp || tx.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="text-right">
+                          <p className={`font-semibold ${
+                            isProfitClaim 
+                              ? 'text-green-600' 
+                              : tx.type === 'deposit' 
+                                ? 'text-green-600' 
+                                : 'text-red-600'
+                          }`}>
+                            {isProfitClaim || tx.type === 'deposit' ? '+' : '-'}{tx.amountFormatted.toFixed(6)} {tx.coinSymbol}
+                          </p>
+                          {isProfitClaim ? (
+                            <p className="text-xs text-muted-foreground">
+                              Profit added to vault
+                            </p>
+                          ) : (
+                            <a
+                              href={`https://lora.algokit.io/testnet/tx/${baseTxHash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                            >
+                              View on Lora Explorer
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
