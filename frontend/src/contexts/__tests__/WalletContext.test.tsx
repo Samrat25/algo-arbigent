@@ -368,7 +368,7 @@ describe('WalletContext Property Tests', () => {
     await fc.assert(
       fc.asyncProperty(
         fc.record({
-          APT: fc.string({ minLength: 1, maxLength: 20 }),
+          ALGO: fc.string({ minLength: 1, maxLength: 20 }),
           USDC: fc.string({ minLength: 1, maxLength: 20 }),
           USDT: fc.string({ minLength: 1, maxLength: 20 }),
         }),
@@ -380,7 +380,7 @@ describe('WalletContext Property Tests', () => {
             
             return (
               <div data-testid={`balance-test-${testId}`}>
-                <div data-testid={`has-apt-${testId}`}>{wallet.balances.APT ? 'has-apt' : 'no-apt'}</div>
+                <div data-testid={`has-apt-${testId}`}>{wallet.balances.ALGO ? 'has-apt' : 'no-apt'}</div>
                 <div data-testid={`has-usdc-${testId}`}>{wallet.balances.USDC ? 'has-usdc' : 'no-usdc'}</div>
                 <div data-testid={`has-usdt-${testId}`}>{wallet.balances.USDT ? 'has-usdt' : 'no-usdt'}</div>
                 <div data-testid={`fetch-type-${testId}`}>{typeof wallet.fetchBalances}</div>

@@ -177,31 +177,31 @@ const Vault = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Link>
-            <h1 className="text-4xl font-bold mb-2">Vault</h1>
+            <h1 className="text-4xl font-bold mb-2 text-foreground">Vault</h1>
             <p className="text-muted-foreground">Manage your crypto assets securely</p>
           </div>
 
           {/* Opt-in Section */}
           {showOptInSection && (
-            <Card className="mb-6 border-primary/50">
+            <Card className="mb-6 border-primary/50 bg-card">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-foreground">
                   <AlertCircle className="h-5 w-5 text-primary" />
                   Asset Setup Required
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-muted-foreground">
                   Before depositing USDC or USDT, you need to opt-in to these assets
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {optInSuccess && (
-                  <Alert className="border-green-500 bg-green-50">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-800">{optInSuccess}</AlertDescription>
+                  <Alert className="border-green-500 bg-green-500/10">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <AlertDescription className="text-green-700 dark:text-green-300">{optInSuccess}</AlertDescription>
                   </Alert>
                 )}
                 
-                <Alert>
+                <Alert className="bg-muted/50">
                   <CheckCircle className="h-4 w-4" />
                   <AlertDescription>
                     Opt-in allows your wallet to receive and hold these tokens. This is a one-time setup.
@@ -257,9 +257,9 @@ const Vault = () => {
           )}
 
           {/* Token Selection */}
-          <Card className="mb-6">
+          <Card className="mb-6 bg-card">
             <CardHeader>
-              <CardTitle>Select Token</CardTitle>
+              <CardTitle className="text-foreground">Select Token</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4">
@@ -278,9 +278,9 @@ const Vault = () => {
           </Card>
 
           {/* Balance Display */}
-          <Card className="mb-6">
+          <Card className="mb-6 bg-card">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Your Balances</CardTitle>
+              <CardTitle className="text-foreground">Your Balances</CardTitle>
               <Button
                 variant="ghost"
                 size="sm"
@@ -299,7 +299,7 @@ const Vault = () => {
                   return (
                     <div
                       key={token.symbol}
-                      className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                      className={`p-4 rounded-lg border-2 transition-all cursor-pointer bg-muted/30 ${
                         selectedToken === token.symbol
                           ? 'border-primary bg-primary/5'
                           : 'border-border hover:border-primary/50'
@@ -309,7 +309,7 @@ const Vault = () => {
                       <div className="flex items-center gap-3 mb-3">
                         <CryptoLogo symbol={token.symbol} size="sm" />
                         <div>
-                          <h3 className="font-semibold text-sm">{token.symbol}</h3>
+                          <h3 className="font-semibold text-sm text-foreground">{token.symbol}</h3>
                           <p className="text-xs text-muted-foreground">{token.name}</p>
                         </div>
                       </div>
@@ -325,7 +325,7 @@ const Vault = () => {
                       {/* Wallet Balance */}
                       <div>
                         <p className="text-xs text-muted-foreground mb-1">Wallet Balance</p>
-                        <p className="text-lg font-semibold">{walletBalance}</p>
+                        <p className="text-lg font-semibold text-foreground">{walletBalance}</p>
                       </div>
                     </div>
                   );
@@ -335,7 +335,7 @@ const Vault = () => {
           </Card>
 
           {/* Deposit/Withdraw Tabs */}
-          <Card>
+          <Card className="bg-card">
             <CardContent className="pt-6">
               <Tabs defaultValue="deposit">
                 <TabsList className="grid w-full grid-cols-2">
@@ -351,7 +351,7 @@ const Vault = () => {
 
                 <TabsContent value="deposit" className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Amount</label>
+                    <label className="text-sm font-medium mb-2 block text-foreground">Amount</label>
                     <Input
                       type="number"
                       placeholder="0.00"
@@ -392,7 +392,7 @@ const Vault = () => {
 
                 <TabsContent value="withdraw" className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Amount</label>
+                    <label className="text-sm font-medium mb-2 block text-foreground">Amount</label>
                     <Input
                       type="number"
                       placeholder="0.00"
@@ -435,9 +435,9 @@ const Vault = () => {
           </Card>
 
           {/* Info Card */}
-          <Card className="mt-6">
+          <Card className="mt-6 bg-card">
             <CardHeader>
-              <CardTitle>Important Information</CardTitle>
+              <CardTitle className="text-foreground">Important Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <p>• You must opt-in to USDC and USDT assets before depositing them</p>
@@ -448,11 +448,11 @@ const Vault = () => {
           </Card>
 
           {/* Transaction History */}
-          <Card className="mt-6">
+          <Card className="mt-6 bg-card">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Transaction History</CardTitle>
-                <CardDescription>Recent vault transactions</CardDescription>
+                <CardTitle className="text-foreground">Transaction History</CardTitle>
+                <CardDescription className="text-muted-foreground">Recent vault transactions</CardDescription>
               </div>
               <Button
                 variant="ghost"
@@ -494,7 +494,7 @@ const Vault = () => {
                     return (
                       <div
                         key={tx._id}
-                        className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/50 transition-colors"
+                        className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/50 transition-colors bg-muted/30"
                       >
                         <div className="flex items-center gap-3">
                           <div className={`p-2 rounded-full ${
@@ -513,10 +513,10 @@ const Vault = () => {
                             )}
                           </div>
                           <div>
-                            <p className="font-semibold capitalize">
+                            <p className="font-semibold capitalize text-foreground">
                               {isProfitClaim ? 'Profit Claim' : tx.type}
                               {isProfitClaim && (
-                                <span className="ml-2 text-xs bg-yellow-500/20 text-yellow-700 px-2 py-0.5 rounded">
+                                <span className="ml-2 text-xs bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 px-2 py-0.5 rounded">
                                   Arbitrage Profit
                                 </span>
                               )}
@@ -530,10 +530,10 @@ const Vault = () => {
                         <div className="text-right">
                           <p className={`font-semibold ${
                             isProfitClaim 
-                              ? 'text-green-600' 
+                              ? 'text-green-600 dark:text-green-400' 
                               : tx.type === 'deposit' 
-                                ? 'text-green-600' 
-                                : 'text-red-600'
+                                ? 'text-green-600 dark:text-green-400' 
+                                : 'text-red-600 dark:text-red-400'
                           }`}>
                             {isProfitClaim || tx.type === 'deposit' ? '+' : '-'}{tx.amountFormatted.toFixed(6)} {tx.coinSymbol}
                           </p>

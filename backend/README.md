@@ -78,7 +78,7 @@ aptos init --profile testnet --network testnet
 ```
 
 2. **Fund the faucet account:**
-Visit https://aptos.dev/network/faucet and paste your account address to get testnet APT.
+Visit https://aptos.dev/network/faucet and paste your account address to get testnet ALGO.
 
 3. **Get your private key:**
 ```bash

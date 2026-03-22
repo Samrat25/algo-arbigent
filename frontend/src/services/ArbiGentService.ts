@@ -23,7 +23,7 @@ export interface AgentConfig {
 }
 
 export interface VaultState {
-  APT: number;
+  ALGO: number;
   USDC: number;
   USDT: number;
 }
@@ -42,8 +42,8 @@ export interface AgentState {
 }
 
 // Triangular arbitrage routes
-// AUTO mode: switches chains (USDC→APT→USDC, then APT→USDT→APT, etc.)
-// Specific pairs: stay on same route (USDC→APT always does USDC→APT→USDC)
+// AUTO mode: switches chains (USDC→ALGO→USDC, then ALGO→USDT→ALGO, etc.)
+// Specific pairs: stay on same route (USDC→ALGO always does USDC→ALGO→USDC)
 interface ArbitrageRoute {
   name: string;
   fromToken: keyof VaultState;
@@ -55,26 +55,26 @@ interface ArbitrageRoute {
 
 // Routes for specific pair selections (non-circular, actual arbitrage)
 const ARBITRAGE_ROUTES: Record<string, ArbitrageRoute> = {
-  'USDC_APT': {
-    name: 'USDC → USDT → APT',
+  'USDC_ALGO': {
+    name: 'USDC → USDT → ALGO',
     fromToken: 'USDC',
     midToken: 'USDT',
-    toToken: 'APT',   // We end up with APT
+    toToken: 'ALGO',   // We end up with ALGO
     apiFromToken: 'usdc',
-    apiToToken: 'apt',
+    apiToToken: 'algo',
   },
-  'APT_USDT': {
-    name: 'APT → USDC → USDT',
-    fromToken: 'APT',
+  'ALGO_USDT': {
+    name: 'ALGO → USDC → USDT',
+    fromToken: 'ALGO',
     midToken: 'USDC',
     toToken: 'USDT',  // We end up with USDT
-    apiFromToken: 'apt',
+    apiFromToken: 'algo',
     apiToToken: 'usdt',
   },
   'USDC_USDT': {
-    name: 'USDC → APT → USDT',
+    name: 'USDC → ALGO → USDT',
     fromToken: 'USDC',
-    midToken: 'APT',
+    midToken: 'ALGO',
     toToken: 'USDT',  // We end up with USDT
     apiFromToken: 'usdc',
     apiToToken: 'usdt',
@@ -82,7 +82,7 @@ const ARBITRAGE_ROUTES: Record<string, ArbitrageRoute> = {
 };
 
 // All routes for AUTO mode - cycles through different chains
-const AUTO_ROUTES = ['USDC_APT', 'APT_USDT', 'USDC_USDT'];
+const AUTO_ROUTES = ['USDC_ALGO', 'ALGO_USDT', 'USDC_USDT'];
 
 // Minimum token balance to continue trading (in USD)
 const MIN_BALANCE_USD = 0.10;
@@ -137,8 +137,8 @@ class ArbiGentService {
     // investedAmount is optional - when not set, uses automatic allocation
   };
 
-  private vaultBalances: VaultState = { APT: 0, USDC: 0, USDT: 0 };
-  private livePrices: Record<string, number> = { APT: 0, USDC: 1, USDT: 1 };
+  private vaultBalances: VaultState = { ALGO: 0, USDC: 0, USDT: 0 };
+  private livePrices: Record<string, number> = { ALGO: 0, USDC: 1, USDT: 1 };
 
   onLog(callback: (log: AgentLog) => void) {
     this.onLogCallback = callback;
@@ -583,16 +583,16 @@ class ArbiGentService {
       // Use current prices for opportunities check
       const currentPrices = [
         {
-          apt: this.livePrices.APT?.toString() || "1.8",
+          algo: this.livePrices.ALGO?.toString() || "0.30",
           usdc: this.livePrices.USDC?.toString() || "1.0",
-          usdt: this.livePrices.USDT?.toString() || "0.98"
+          usdt: this.livePrices.USDT?.toString() || "0.999"
         }
       ];
 
       const response = await apiService.findArbitrageOpportunities({
         trade_amount: 1000, // Use a standard amount for comparison
         current_prices: currentPrices,
-        apt_price: this.livePrices.APT?.toString() || "1.8"
+        algo_price: this.livePrices.ALGO?.toString() || "0.30"
       });
 
       if (response.success && response.data?.opportunities?.top_opportunities) {
@@ -612,7 +612,7 @@ class ArbiGentService {
 
           // Map API route to our internal route keys
           const fromToken = bestOpp.route.from_pair.split('_')[0].toUpperCase();
-          const toToken = bestOpp.route.to_pair.split('_')[1]?.toUpperCase() || 'APT';
+          const toToken = bestOpp.route.to_pair.split('_')[1]?.toUpperCase() || 'ALGO';
 
           // Find matching route key
           for (const [key, route] of Object.entries(ARBITRAGE_ROUTES)) {
@@ -737,9 +737,9 @@ class ArbiGentService {
     }
 
     try {
-      // Get decimals for each token
-      const fromDecimals = route.fromToken === 'APT' ? 8 : 6;
-      const toDecimals = route.toToken === 'APT' ? 8 : 6;
+      // Get decimals for each token (Algorand uses 6 decimals for all tokens)
+      const fromDecimals = 6;
+      const toDecimals = 6;
 
       // Convert to smallest units
       const fromAmountSmallest = Math.floor(fromAmount * Math.pow(10, fromDecimals)).toString();

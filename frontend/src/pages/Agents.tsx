@@ -18,7 +18,7 @@ import { useArbiGent } from "@/hooks/useArbiGent";
 import { RiskLevel } from "@/services/ArbiGentService";
 
 interface VaultTokenBalance {
-  token: 'APT' | 'USDC' | 'USDT' | 'ALGO';
+  token: 'ALGO' | 'USDC' | 'USDT' | 'ALGO';
   amount: string;
   usdValue: string;
   walletAmount?: string; // NEW: Wallet balance

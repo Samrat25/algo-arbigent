@@ -158,18 +158,18 @@ module arbitrage::swap {
         });
     }
 
-    /// Swap APT to USDC - Takes APT from user and mints USDC
+    /// Swap ALGO to USDC - Takes ALGO from user and mints USDC
     public entry fun swap_apt_to_usdc(account: &signer, apt_amount: u64) acquires TokenCapabilities {
         let module_addr = @arbitrage;
         assert!(exists<TokenCapabilities<USDC>>(module_addr), E_NOT_INITIALIZED);
 
         let trader = signer::address_of(account);
         
-        // Check APT balance
+        // Check ALGO balance
         let apt_balance = coin::balance<0x1::aptos_coin::AptosCoin>(trader);
         assert!(apt_balance >= apt_amount, E_INSUFFICIENT_BALANCE);
 
-        // Calculate USDC amount to mint (simulated exchange rate ~$8 per APT)
+        // Calculate USDC amount to mint (simulated exchange rate ~$8 per ALGO)
         let rate = 8000000 + ((apt_amount % 500000) as u64);
         let usdc_amount = (apt_amount * rate) / 100000000;
 
@@ -185,7 +185,7 @@ module arbitrage::swap {
 
         event::emit(SwapEvent {
             trader,
-            from_token: b"APT",
+            from_token: b"ALGO",
             to_token: b"USDC",
             amount_in: apt_amount,
             amount_out: usdc_amount,
@@ -193,18 +193,18 @@ module arbitrage::swap {
         });
     }
 
-    /// Swap APT to USDT - Takes APT from user and mints USDT
+    /// Swap ALGO to USDT - Takes ALGO from user and mints USDT
     public entry fun swap_apt_to_usdt(account: &signer, apt_amount: u64) acquires TokenCapabilities {
         let module_addr = @arbitrage;
         assert!(exists<TokenCapabilities<USDT>>(module_addr), E_NOT_INITIALIZED);
 
         let trader = signer::address_of(account);
         
-        // Check APT balance
+        // Check ALGO balance
         let apt_balance = coin::balance<0x1::aptos_coin::AptosCoin>(trader);
         assert!(apt_balance >= apt_amount, E_INSUFFICIENT_BALANCE);
 
-        // Calculate USDT amount to mint (simulated exchange rate ~$8.05 per APT)
+        // Calculate USDT amount to mint (simulated exchange rate ~$8.05 per ALGO)
         let rate = 8050000 + ((apt_amount % 400000) as u64);
         let usdt_amount = (apt_amount * rate) / 100000000;
 
@@ -220,7 +220,7 @@ module arbitrage::swap {
 
         event::emit(SwapEvent {
             trader,
-            from_token: b"APT",
+            from_token: b"ALGO",
             to_token: b"USDT",
             amount_in: apt_amount,
             amount_out: usdt_amount,
@@ -228,7 +228,7 @@ module arbitrage::swap {
         });
     }
 
-    /// Swap USDC to APT - uses primary fungible store
+    /// Swap USDC to ALGO - uses primary fungible store
     public entry fun swap_usdc_to_apt(account: &signer, usdc_amount: u64) acquires TokenCapabilities {
         let trader = signer::address_of(account);
         
@@ -242,14 +242,14 @@ module arbitrage::swap {
         event::emit(SwapEvent {
             trader,
             from_token: b"USDC",
-            to_token: b"APT",
+            to_token: b"ALGO",
             amount_in: usdc_amount,
             amount_out: apt_amount,
             timestamp: timestamp::now_seconds(),
         });
     }
 
-    /// Swap USDT to APT - uses primary fungible store
+    /// Swap USDT to ALGO - uses primary fungible store
     public entry fun swap_usdt_to_apt(account: &signer, usdt_amount: u64) acquires TokenCapabilities {
         let trader = signer::address_of(account);
         
@@ -262,7 +262,7 @@ module arbitrage::swap {
         event::emit(SwapEvent {
             trader,
             from_token: b"USDT",
-            to_token: b"APT",
+            to_token: b"ALGO",
             amount_in: usdt_amount,
             amount_out: apt_amount,
             timestamp: timestamp::now_seconds(),
@@ -323,38 +323,38 @@ module arbitrage::swap {
         });
     }
 
-    /// Deposit APT to vault - Burns APT from user wallet (tracked in backend)
+    /// Deposit ALGO to vault - Burns ALGO from user wallet (tracked in backend)
     public entry fun deposit_apt_to_vault(account: &signer, apt_amount: u64) {
         let trader = signer::address_of(account);
         
-        // Check APT balance
+        // Check ALGO balance
         let apt_balance = coin::balance<0x1::aptos_coin::AptosCoin>(trader);
         assert!(apt_balance >= apt_amount, E_INSUFFICIENT_BALANCE);
 
-        // Transfer APT to the module address (vault)
+        // Transfer ALGO to the module address (vault)
         coin::transfer<0x1::aptos_coin::AptosCoin>(account, @arbitrage, apt_amount);
 
         event::emit(SwapEvent {
             trader,
-            from_token: b"APT",
-            to_token: b"VAULT_APT",
+            from_token: b"ALGO",
+            to_token: b"VAULT_ALGO",
             amount_in: apt_amount,
             amount_out: apt_amount,
             timestamp: timestamp::now_seconds(),
         });
     }
 
-    /// Withdraw APT from vault - Transfers APT from module to user
+    /// Withdraw ALGO from vault - Transfers ALGO from module to user
     public entry fun withdraw_apt_from_vault(_account: &signer, _apt_amount: u64) {
-        // Note: APT withdrawals are handled by backend tracking
-        // The actual APT transfer would require the module to have APT balance
+        // Note: ALGO withdrawals are handled by backend tracking
+        // The actual ALGO transfer would require the module to have ALGO balance
         // For now, this emits an event for tracking
         let trader = signer::address_of(_account);
 
         event::emit(SwapEvent {
             trader,
-            from_token: b"VAULT_APT",
-            to_token: b"APT",
+            from_token: b"VAULT_ALGO",
+            to_token: b"ALGO",
             amount_in: _apt_amount,
             amount_out: _apt_amount,
             timestamp: timestamp::now_seconds(),
@@ -486,13 +486,13 @@ module arbitrage::swap {
 
     #[view]
     public fun get_swap_rate(from_token: vector<u8>, to_token: vector<u8>, amount: u64): u64 {
-        if (from_token == b"APT" && to_token == b"USDC") {
+        if (from_token == b"ALGO" && to_token == b"USDC") {
             (amount * 8000000) / 100000000
-        } else if (from_token == b"APT" && to_token == b"USDT") {
+        } else if (from_token == b"ALGO" && to_token == b"USDT") {
             (amount * 8050000) / 100000000
-        } else if (from_token == b"USDC" && to_token == b"APT") {
+        } else if (from_token == b"USDC" && to_token == b"ALGO") {
             (amount * 12500000) / 1000000
-        } else if (from_token == b"USDT" && to_token == b"APT") {
+        } else if (from_token == b"USDT" && to_token == b"ALGO") {
             (amount * 12400000) / 1000000
         } else if (from_token == b"USDC" && to_token == b"USDT") {
             amount * 9995 / 10000

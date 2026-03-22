@@ -4,7 +4,7 @@ import {
   NetworkConfig, 
   NetworkValidator, 
   NetworkSwitcher, 
-  APTOS_TESTNET_CONFIG 
+  ALGOOS_TESTNET_CONFIG 
 } from '@/config/network';
 import { balanceService } from '@/services/BalanceService';
 import { 
@@ -17,7 +17,7 @@ import { useSmartContractVault } from '@/hooks/useSmartContractVault';
 
 // Token balance interface
 interface TokenBalances {
-  APT: string;
+  ALGO: string;
   USDC: string;
   USDT: string;
 }
@@ -75,10 +75,10 @@ interface WalletContextType {
   smartContract: {
     isProcessing: boolean;
     error: string | null;
-    depositAPTtoVault: (amount: string, targetToken: 'USDC' | 'USDT') => Promise<boolean>;
-    depositAPTDirectToVault: (amount: string) => Promise<boolean>;
+    depositALGOtoVault: (amount: string, targetToken: 'USDC' | 'USDT') => Promise<boolean>;
+    depositALGODirectToVault: (amount: string) => Promise<boolean>;
     depositTokenToVault: (amount: string, token: 'USDC' | 'USDT') => Promise<boolean>;
-    withdrawFromVault: (amount: string, sourceToken: 'APT' | 'USDC' | 'USDT') => Promise<boolean>;
+    withdrawFromVault: (amount: string, sourceToken: 'ALGO' | 'USDC' | 'USDT') => Promise<boolean>;
     mintTestTokens: (token: 'USDC' | 'USDT', amount: string) => Promise<boolean>;
     swapTokens: (fromToken: 'USDC' | 'USDT', toToken: 'USDC' | 'USDT', amount: string) => Promise<boolean>;
     executeArbitrage: (inputAmount: string, tokenPair: string) => Promise<boolean>;
@@ -117,7 +117,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
 
   // Local state for balances and errors
   const [balances, setBalances] = useState<TokenBalances>({
-    APT: '0',
+    ALGO: '0',
     USDC: '0',
     USDT: '0'
   });
@@ -165,10 +165,10 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
           throw new Error('Wallet must be connected to switch networks');
         }
 
-        const success = await NetworkSwitcher.switchToNetwork(APTOS_TESTNET_CONFIG);
+        const success = await NetworkSwitcher.switchToNetwork(ALGOOS_TESTNET_CONFIG);
         
         if (!success) {
-          const promptMessage = NetworkSwitcher.getNetworkSwitchPrompt(APTOS_TESTNET_CONFIG);
+          const promptMessage = NetworkSwitcher.getNetworkSwitchPrompt(ALGOOS_TESTNET_CONFIG);
           throw new Error(promptMessage);
         }
         
@@ -181,7 +181,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   };
 
   const getNetworkSwitchPrompt = (): string => {
-    return NetworkSwitcher.getNetworkSwitchPrompt(APTOS_TESTNET_CONFIG);
+    return NetworkSwitcher.getNetworkSwitchPrompt(ALGOOS_TESTNET_CONFIG);
   };
 
   // Wallet detection helper
@@ -212,7 +212,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
         // Wait a moment for network info to be available
         setTimeout(() => {
           if (aptosNetwork && !NetworkValidator.isConnectedToTestnet(aptosNetwork)) {
-            const promptMessage = `Wrong network detected. ${NetworkSwitcher.getNetworkSwitchPrompt(APTOS_TESTNET_CONFIG)}`;
+            const promptMessage = `Wrong network detected. ${NetworkSwitcher.getNetworkSwitchPrompt(ALGOOS_TESTNET_CONFIG)}`;
             handleError(formatError(new Error(promptMessage)));
             console.warn('Wallet connected to wrong network. Expected testnet.');
           }
@@ -243,7 +243,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
         
         // Clear all wallet-related state
         setBalances({
-          APT: '0',
+          ALGO: '0',
           USDC: '0',
           USDT: '0'
         });
@@ -259,7 +259,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
         localStorage.removeItem('wallet_connection_time');
         
         setBalances({
-          APT: '0',
+          ALGO: '0',
           USDC: '0',
           USDT: '0'
         });
@@ -409,8 +409,8 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     smartContract: {
       isProcessing: smartContractVault.isProcessing,
       error: smartContractVault.error,
-      depositAPTtoVault: smartContractVault.depositAPTtoVault,
-      depositAPTDirectToVault: smartContractVault.depositAPTDirectToVault,
+      depositALGOtoVault: smartContractVault.depositALGOtoVault,
+      depositALGODirectToVault: smartContractVault.depositALGODirectToVault,
       depositTokenToVault: smartContractVault.depositTokenToVault,
       withdrawFromVault: smartContractVault.withdrawFromVault,
       mintTestTokens: smartContractVault.mintTestTokens,

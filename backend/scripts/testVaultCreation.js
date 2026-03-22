@@ -30,12 +30,12 @@ const testVaultCreation = async () => {
     });
 
     // Verify all balances are 0
-    const aptBalance = vault.getCoinBalance('APT');
+    const aptBalance = vault.getCoinBalance('ALGO');
     const usdcBalance = vault.getCoinBalance('USDC');
     const usdtBalance = vault.getCoinBalance('USDT');
 
     console.log('💰 Balance verification:');
-    console.log(`  APT: ${aptBalance} (should be 0)`);
+    console.log(`  ALGO: ${aptBalance} (should be 0)`);
     console.log(`  USDC: ${usdcBalance} (should be 0)`);
     console.log(`  USDT: ${usdtBalance} (should be 0)`);
 

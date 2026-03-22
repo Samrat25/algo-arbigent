@@ -16,6 +16,8 @@ ALGOD_SERVER = 'https://testnet-api.algonode.cloud'
 ALGOD_PORT = ''
 
 APP_ID = int(os.getenv('APP_ID', '757475765'))
+USDC_ASSET_ID = int(os.getenv('USDC_ASSET_ID', '757493637'))
+USDT_ASSET_ID = int(os.getenv('USDT_ASSET_ID', '757493641'))
 USER_MNEMONIC = os.getenv('USER_MNEMONIC')
 
 def execute_test_swap():
@@ -69,12 +71,13 @@ def execute_test_swap():
         params = algod_client.suggested_params()
         amount_micro = 10_000_000  # 10 USDC in microunits
         
-        # Create application call transaction
+        # Create application call transaction with foreign_assets
         txn = transaction.ApplicationNoOpTxn(
             sender=user_address,
             sp=params,
             index=APP_ID,
-            app_args=['swap_usdc_to_usdt'.encode(), amount_micro.to_bytes(8, 'big')]
+            app_args=['swap_usdc_to_usdt'.encode(), amount_micro.to_bytes(8, 'big')],
+            foreign_assets=[USDC_ASSET_ID, USDT_ASSET_ID]  # Include all assets
         )
         
         # Sign transaction

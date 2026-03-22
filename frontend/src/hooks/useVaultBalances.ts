@@ -3,7 +3,7 @@ import { useAlgorandWallet as useWallet } from '@/contexts/AlgorandWalletContext
 import { apiService, Vault, VaultBalance } from '@/services/ApiService';
 
 // Coinbase API endpoints
-const COINBASE_APT_API = 'https://api.coinbase.com/v2/prices/APT-USD/spot';
+const COINBASE_ALGO_API = 'https://api.coinbase.com/v2/prices/ALGO-USD/spot';
 const COINBASE_USDC_API = 'https://api.coinbase.com/v2/prices/USDC-USD/spot';
 const COINBASE_USDT_API = 'https://api.coinbase.com/v2/prices/USDT-USD/spot';
 
@@ -23,7 +23,7 @@ export interface UseVaultBalancesReturn {
 
 export const useVaultBalances = (): UseVaultBalancesReturn => {
   const { account, connected } = useWallet();
-  const [prices, setPrices] = useState({ APT: 0, USDC: 1, USDT: 1 });
+  const [prices, setPrices] = useState({ ALGO: 0, USDC: 1, USDT: 1 });
   
   const [vault, setVault] = useState<Vault | null>(null);
   const [vaultBalances, setVaultBalances] = useState<VaultBalanceWithUSD[]>([]);
@@ -35,7 +35,7 @@ export const useVaultBalances = (): UseVaultBalancesReturn => {
   const fetchPrices = useCallback(async () => {
     try {
       const [aptResponse, usdcResponse, usdtResponse] = await Promise.all([
-        fetch(COINBASE_APT_API),
+        fetch(COINBASE_ALGO_API),
         fetch(COINBASE_USDC_API),
         fetch(COINBASE_USDT_API)
       ]);
@@ -59,7 +59,7 @@ export const useVaultBalances = (): UseVaultBalancesReturn => {
         usdtPrice = parseFloat(usdtData.data?.amount) || 1;
       }
       
-      setPrices({ APT: aptPrice, USDC: usdcPrice, USDT: usdtPrice });
+      setPrices({ ALGO: aptPrice, USDC: usdcPrice, USDT: usdtPrice });
     } catch (err) {
       console.error('Failed to fetch prices:', err);
     }
@@ -70,7 +70,7 @@ export const useVaultBalances = (): UseVaultBalancesReturn => {
     
     const balancesWithUSD: VaultBalanceWithUSD[] = balances.map(balance => {
       const symbol = balance.coinSymbol.toUpperCase();
-      const decimals = symbol === 'APT' ? 8 : 6;
+      const decimals = symbol === 'ALGO' ? 8 : 6;
       const balanceAmount = parseFloat(balance.balance) / Math.pow(10, decimals);
       const price = prices[symbol as keyof typeof prices] || 0;
       const usdValue = balanceAmount * price;
@@ -79,7 +79,7 @@ export const useVaultBalances = (): UseVaultBalancesReturn => {
       
       return {
         ...balance,
-        formattedBalance: symbol === 'APT' ? balanceAmount.toFixed(4) : balanceAmount.toFixed(2),
+        formattedBalance: symbol === 'ALGO' ? balanceAmount.toFixed(4) : balanceAmount.toFixed(2),
         usdValue: usdValue.toFixed(2)
       };
     });
@@ -134,7 +134,7 @@ export const useVaultBalances = (): UseVaultBalancesReturn => {
 
   // Recalculate USD values when prices change
   useEffect(() => {
-    if (vault?.balances && prices.APT > 0) {
+    if (vault?.balances && prices.ALGO > 0) {
       calculateUsdValues(vault.balances);
     }
   }, [vault?.balances, prices, calculateUsdValues]);

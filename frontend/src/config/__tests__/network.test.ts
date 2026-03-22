@@ -3,9 +3,9 @@ import * as fc from 'fast-check';
 import { 
   NetworkValidator, 
   NetworkSwitcher, 
-  APTOS_TESTNET_CONFIG,
-  APTOS_MAINNET_CONFIG,
-  APTOS_DEVNET_CONFIG,
+  ALGOOS_TESTNET_CONFIG,
+  ALGOOS_MAINNET_CONFIG,
+  ALGOOS_DEVNET_CONFIG,
   NETWORK_CONFIGS,
   DEFAULT_NETWORK
 } from '../network';
@@ -84,11 +84,11 @@ describe('Network Configuration', () => {
 
     it('should handle edge cases in network validation', () => {
       // Test null/undefined inputs
-      expect(NetworkValidator.isCorrectNetwork(null, APTOS_TESTNET_CONFIG)).toBe(false);
-      expect(NetworkValidator.isCorrectNetwork(undefined, APTOS_TESTNET_CONFIG)).toBe(false);
+      expect(NetworkValidator.isCorrectNetwork(null, ALGOOS_TESTNET_CONFIG)).toBe(false);
+      expect(NetworkValidator.isCorrectNetwork(undefined, ALGOOS_TESTNET_CONFIG)).toBe(false);
       
       // Test empty objects
-      expect(NetworkValidator.isCorrectNetwork({}, APTOS_TESTNET_CONFIG)).toBe(false);
+      expect(NetworkValidator.isCorrectNetwork({}, ALGOOS_TESTNET_CONFIG)).toBe(false);
       
       // Test unsupported networks
       expect(NetworkValidator.isSupportedNetwork('unsupported')).toBe(false);
@@ -98,8 +98,8 @@ describe('Network Configuration', () => {
 
   describe('NetworkSwitcher', () => {
     it('should generate appropriate network switch prompts', () => {
-      const prompt = NetworkSwitcher.getNetworkSwitchPrompt(APTOS_TESTNET_CONFIG);
-      expect(prompt).toContain(APTOS_TESTNET_CONFIG.displayName);
+      const prompt = NetworkSwitcher.getNetworkSwitchPrompt(ALGOOS_TESTNET_CONFIG);
+      expect(prompt).toContain(ALGOOS_TESTNET_CONFIG.displayName);
       expect(prompt).toContain('switch');
       expect(prompt).toContain('wallet');
     });
@@ -109,7 +109,7 @@ describe('Network Configuration', () => {
       const originalWindow = global.window;
       delete (global as any).window;
       
-      const result = await NetworkSwitcher.switchToNetwork(APTOS_TESTNET_CONFIG);
+      const result = await NetworkSwitcher.switchToNetwork(ALGOOS_TESTNET_CONFIG);
       expect(result).toBe(false);
       
       // Restore window
@@ -130,19 +130,19 @@ describe('Network Configuration', () => {
       });
       
       // Test specific configurations
-      expect(APTOS_TESTNET_CONFIG.name).toBe('testnet');
-      expect(APTOS_TESTNET_CONFIG.chainId).toBe('2');
-      expect(APTOS_MAINNET_CONFIG.chainId).toBe('1');
-      expect(APTOS_DEVNET_CONFIG.chainId).toBe('3');
+      expect(ALGOOS_TESTNET_CONFIG.name).toBe('testnet');
+      expect(ALGOOS_TESTNET_CONFIG.chainId).toBe('2');
+      expect(ALGOOS_MAINNET_CONFIG.chainId).toBe('1');
+      expect(ALGOOS_DEVNET_CONFIG.chainId).toBe('3');
       
       // Test default network
-      expect(DEFAULT_NETWORK).toEqual(APTOS_TESTNET_CONFIG);
+      expect(DEFAULT_NETWORK).toEqual(ALGOOS_TESTNET_CONFIG);
     });
 
     it('should have consistent network mapping', () => {
-      expect(NETWORK_CONFIGS.testnet).toEqual(APTOS_TESTNET_CONFIG);
-      expect(NETWORK_CONFIGS.mainnet).toEqual(APTOS_MAINNET_CONFIG);
-      expect(NETWORK_CONFIGS.devnet).toEqual(APTOS_DEVNET_CONFIG);
+      expect(NETWORK_CONFIGS.testnet).toEqual(ALGOOS_TESTNET_CONFIG);
+      expect(NETWORK_CONFIGS.mainnet).toEqual(ALGOOS_MAINNET_CONFIG);
+      expect(NETWORK_CONFIGS.devnet).toEqual(ALGOOS_DEVNET_CONFIG);
     });
   });
 });

@@ -36,7 +36,7 @@ const mockWalletContext = {
   connect: vi.fn(),
   disconnect: vi.fn(),
   detectWallet: vi.fn(),
-  balances: { APT: '0', USDC: '0', USDT: '0' },
+  balances: { ALGO: '0', USDC: '0', USDT: '0' },
   fetchBalances: vi.fn(),
   refreshBalances: vi.fn(),
   error: null,

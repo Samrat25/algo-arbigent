@@ -55,7 +55,7 @@ function checkRateLimit(address) {
 // Faucet endpoint
 app.post('/api/faucet', async (req, res) => {
   try {
-    const { address, amount = 10000000 } = req.body; // Default 0.1 APT (reduced from 1 APT)
+    const { address, amount = 10000000 } = req.body; // Default 0.1 ALGO (reduced from 1 ALGO)
     
     if (!address) {
       return res.status(400).json({ error: 'Address is required' });
@@ -68,7 +68,7 @@ app.post('/api/faucet', async (req, res) => {
       });
     }
 
-    // Transfer APT from faucet account
+    // Transfer ALGO from faucet account
     const transaction = await aptos.transaction.build.simple({
       sender: faucetAccount.accountAddress,
       data: {
@@ -90,7 +90,7 @@ app.post('/api/faucet', async (req, res) => {
       success: true,
       txHash: committedTxn.hash,
       amount: amount / 100000000,
-      message: `Sent ${amount / 100000000} APT to ${address}`,
+      message: `Sent ${amount / 100000000} ALGO to ${address}`,
     });
 
   } catch (error) {
@@ -104,7 +104,7 @@ app.post('/api/faucet', async (req, res) => {
 // Health check
 app.get('/api/health', async (req, res) => {
   try {
-    const balance = await aptos.getAccountAPTAmount({
+    const balance = await aptos.getAccountALGOAmount({
       accountAddress: faucetAccount.accountAddress,
     });
     
@@ -188,7 +188,7 @@ app.post('/api/vault/deposit', async (req, res) => {
     }
     
     // Calculate formatted amount based on decimals
-    const decimals = coin.decimals || (coinSymbol.toUpperCase() === 'APT' ? 8 : 6);
+    const decimals = coin.decimals || (coinSymbol.toUpperCase() === 'ALGO' ? 8 : 6);
     const amountFormatted = parseFloat(amount) / Math.pow(10, decimals);
     
     // Create transaction log
@@ -266,7 +266,7 @@ app.post('/api/vault/withdraw', async (req, res) => {
     }
     
     // Calculate formatted amount based on decimals
-    const decimals = coin.decimals || (coinSymbol.toUpperCase() === 'APT' ? 8 : 6);
+    const decimals = coin.decimals || (coinSymbol.toUpperCase() === 'ALGO' ? 8 : 6);
     const amountFormatted = parseFloat(amount) / Math.pow(10, decimals);
     
     // Create transaction log

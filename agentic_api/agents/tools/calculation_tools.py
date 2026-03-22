@@ -19,7 +19,7 @@ class GasCalculationInput(BaseModel):
     """Input for gas calculation tool"""
     gas_unit_price: int = Field(description="Gas unit price in octas")
     operations: int = Field(description="Number of operations")
-    apt_price: float = Field(description="APT price in USD")
+    apt_price: float = Field(description="ALGO price in USD")
     token_type: str = Field(description="Token type (apt, usdc, usdt)")
 
 
@@ -60,10 +60,10 @@ class PriceCalculationTool(BaseTool):
             
             # Calculate price difference percentage
             if from_token.lower() == "apt" and to_token.lower() in ["usdc", "usdt"]:
-                # APT -> Stablecoin: Look for APT being undervalued
+                # ALGO -> Stablecoin: Look for ALGO being undervalued
                 price_diff_percent = self._calculate_apt_to_stable_diff(from_price, to_price)
             elif from_token.lower() in ["usdc", "usdt"] and to_token.lower() == "apt":
-                # Stablecoin -> APT: Look for APT being overvalued
+                # Stablecoin -> ALGO: Look for ALGO being overvalued
                 price_diff_percent = self._calculate_stable_to_apt_diff(from_price, to_price)
             else:
                 # Stablecoin to stablecoin
@@ -85,15 +85,15 @@ class PriceCalculationTool(BaseTool):
             return json.dumps({"error": f"Price calculation failed: {str(e)}"})
     
     def _calculate_apt_to_stable_diff(self, apt_price: float, stable_price: float) -> float:
-        """Calculate price difference for APT to stablecoin trades"""
+        """Calculate price difference for ALGO to stablecoin trades"""
         # Simulate realistic DEX price variations (0.5-2% differences)
         # In real scenarios, different DEXs have slightly different prices
         base_diff = 1.2  # 1.2% base difference
-        volatility_factor = min(apt_price / 10, 0.5)  # Higher APT price = more volatility
+        volatility_factor = min(apt_price / 10, 0.5)  # Higher ALGO price = more volatility
         return base_diff + volatility_factor
     
     def _calculate_stable_to_apt_diff(self, stable_price: float, apt_price: float) -> float:
-        """Calculate price difference for stablecoin to APT trades"""
+        """Calculate price difference for stablecoin to ALGO trades"""
         base_diff = 1.1  # 1.1% base difference
         volatility_factor = min(apt_price / 15, 0.3)
         return base_diff + volatility_factor
@@ -120,7 +120,7 @@ class GasCalculationTool(BaseTool):
             
             # Calculate costs
             total_cost_octas = total_gas_units * gas_unit_price
-            total_cost_apt = total_cost_octas / 100_000_000  # 1 APT = 100M octas
+            total_cost_apt = total_cost_octas / 100_000_000  # 1 ALGO = 100M octas
             total_cost_usd = total_cost_apt * apt_price
             
             result = {

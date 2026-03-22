@@ -5,14 +5,14 @@ const CONTRACT_ADDRESS = '0x851c087b280c6853667631d72147716d15276a7383608257ca97
 
 // Token balance interface
 export interface TokenBalances {
-  APT: string;
+  ALGO: string;
   USDC: string;
   USDT: string;
 }
 
 // Token configuration interface
 export interface TokenConfig {
-  symbol: 'APT' | 'USDC' | 'USDT';
+  symbol: 'ALGO' | 'USDC' | 'USDT';
   name: string;
   decimals: number;
   contractAddress?: string; // For non-native tokens
@@ -21,8 +21,8 @@ export interface TokenConfig {
 
 // Token configurations for Aptos testnet
 export const TOKEN_CONFIGS: Record<string, TokenConfig> = {
-  APT: {
-    symbol: 'APT',
+  ALGO: {
+    symbol: 'ALGO',
     name: 'Aptos Token',
     decimals: 8,
     coinType: '0x1::aptos_coin::AptosCoin'
@@ -69,25 +69,25 @@ export class BalanceService {
   }
 
   /**
-   * Fetch APT balance for a given address
+   * Fetch ALGO balance for a given address
    */
-  async fetchAPTBalance(address: string): Promise<string> {
+  async fetchALGOBalance(address: string): Promise<string> {
     try {
-      const cacheKey = `${address}-APT`;
+      const cacheKey = `${address}-ALGO`;
       const cached = this.getCachedBalance(cacheKey);
       if (cached) return cached;
 
-      const balance = await this.aptos.getAccountAPTAmount({
+      const balance = await this.aptos.getAccountALGOAmount({
         accountAddress: address
       });
 
-      const formattedBalance = this.formatBalance(balance.toString(), TOKEN_CONFIGS.APT.decimals);
+      const formattedBalance = this.formatBalance(balance.toString(), TOKEN_CONFIGS.ALGO.decimals);
       this.setCachedBalance(cacheKey, formattedBalance);
       
       return formattedBalance;
     } catch (error) {
-      console.error('Failed to fetch APT balance:', error);
-      throw new Error(`Failed to fetch APT balance: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Failed to fetch ALGO balance:', error);
+      throw new Error(`Failed to fetch ALGO balance: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -273,13 +273,13 @@ export class BalanceService {
   async fetchAllBalances(address: string): Promise<TokenBalances> {
     try {
       const [aptBalance, usdcBalance, usdtBalance] = await Promise.allSettled([
-        this.fetchAPTBalance(address),
+        this.fetchALGOBalance(address),
         this.fetchUSDCBalance(address),
         this.fetchUSDTBalance(address)
       ]);
 
       return {
-        APT: aptBalance.status === 'fulfilled' ? aptBalance.value : '0',
+        ALGO: aptBalance.status === 'fulfilled' ? aptBalance.value : '0',
         USDC: usdcBalance.status === 'fulfilled' ? usdcBalance.value : '0',
         USDT: usdtBalance.status === 'fulfilled' ? usdtBalance.value : '0'
       };
@@ -392,7 +392,7 @@ export const balanceService = new BalanceService(Network.TESTNET);
 
 // Export interface for dependency injection
 export interface IBalanceService {
-  fetchAPTBalance(address: string): Promise<string>;
+  fetchALGOBalance(address: string): Promise<string>;
   fetchUSDCBalance(address: string): Promise<string>;
   fetchUSDTBalance(address: string): Promise<string>;
   fetchAllBalances(address: string): Promise<TokenBalances>;

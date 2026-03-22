@@ -57,7 +57,7 @@ export const RECOVERY_ACTIONS: Record<WalletErrorType, string[]> = {
   ],
   [WalletErrorType.TRANSACTION_FAILED]: [
     'Check your wallet balance',
-    'Make sure you have enough APT for gas fees',
+    'Make sure you have enough ALGO for gas fees',
     'Try the transaction again'
   ],
   [WalletErrorType.UNKNOWN_ERROR]: [

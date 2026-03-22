@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 interface PriceDataPoint {
   time: number;
-  APT: number;
+  ALGO: number;
   USDC: number;
   USDT: number;
 }
@@ -17,10 +17,10 @@ interface TokenPriceInfo {
   name: string;
 }
 
-type TokenKey = 'APT' | 'USDC' | 'USDT';
+type TokenKey = 'ALGO' | 'USDC' | 'USDT';
 
 // Coinbase API endpoints
-const COINBASE_APT_API = 'https://api.coinbase.com/v2/prices/APT-USD/spot';
+const COINBASE_ALGO_API = 'https://api.coinbase.com/v2/prices/ALGO-USD/spot';
 const COINBASE_USDC_API = 'https://api.coinbase.com/v2/prices/USDC-USD/spot';
 const COINBASE_USDT_API = 'https://api.coinbase.com/v2/prices/USDT-USD/spot';
 
@@ -31,7 +31,7 @@ const REFRESH_INTERVAL = 3000;
 const PriceChart = () => {
   const [priceHistory, setPriceHistory] = useState<PriceDataPoint[]>([]);
   const [prices, setPrices] = useState<Record<string, TokenPriceInfo>>({
-    APT: { price: 0, prevPrice: 0, color: '#ef4444', name: 'APT' },
+    ALGO: { price: 0, prevPrice: 0, color: '#ef4444', name: 'ALGO' },
     USDC: { price: 1, prevPrice: 1, color: '#3b82f6', name: 'USDC' },
     USDT: { price: 1, prevPrice: 1, color: '#22c55e', name: 'USDT' }
   });
@@ -39,12 +39,12 @@ const PriceChart = () => {
   const [hoveredPoint, setHoveredPoint] = useState<PriceDataPoint | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [zoomLevel, setZoomLevel] = useState(1);
-  const [selectedToken, setSelectedToken] = useState<TokenKey>('APT');
+  const [selectedToken, setSelectedToken] = useState<TokenKey>('ALGO');
 
   const fetchPrices = useCallback(async () => {
     try {
       const [aptResponse, usdcResponse, usdtResponse] = await Promise.all([
-        fetch(COINBASE_APT_API),
+        fetch(COINBASE_ALGO_API),
         fetch(COINBASE_USDC_API),
         fetch(COINBASE_USDT_API)
       ]);
@@ -67,14 +67,14 @@ const PriceChart = () => {
       }
 
       setPrices(prev => ({
-        APT: { ...prev.APT, price: aptPrice, prevPrice: prev.APT.price || aptPrice },
+        ALGO: { ...prev.ALGO, price: aptPrice, prevPrice: prev.ALGO.price || aptPrice },
         USDC: { ...prev.USDC, price: usdcPrice, prevPrice: prev.USDC.price || usdcPrice },
         USDT: { ...prev.USDT, price: usdtPrice, prevPrice: prev.USDT.price || usdtPrice }
       }));
 
       const newPoint: PriceDataPoint = {
         time: Date.now(),
-        APT: aptPrice,
+        ALGO: aptPrice,
         USDC: usdcPrice,
         USDT: usdtPrice
       };

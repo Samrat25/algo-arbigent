@@ -25,7 +25,7 @@ export const API_CONFIG: ApiConfig = {
 };
 
 // Aptos testnet configuration
-export const APTOS_TESTNET_CONFIG: NetworkConfig = {
+export const ALGOOS_TESTNET_CONFIG: NetworkConfig = {
   name: 'testnet',
   chainId: '2',
   rpcUrl: 'https://fullnode.testnet.aptoslabs.com/v1',
@@ -35,7 +35,7 @@ export const APTOS_TESTNET_CONFIG: NetworkConfig = {
 };
 
 // Aptos mainnet configuration
-export const APTOS_MAINNET_CONFIG: NetworkConfig = {
+export const ALGOOS_MAINNET_CONFIG: NetworkConfig = {
   name: 'mainnet',
   chainId: '1',
   rpcUrl: 'https://fullnode.mainnet.aptoslabs.com/v1',
@@ -44,7 +44,7 @@ export const APTOS_MAINNET_CONFIG: NetworkConfig = {
 };
 
 // Aptos devnet configuration
-export const APTOS_DEVNET_CONFIG: NetworkConfig = {
+export const ALGOOS_DEVNET_CONFIG: NetworkConfig = {
   name: 'devnet',
   chainId: '3',
   rpcUrl: 'https://fullnode.devnet.aptoslabs.com/v1',
@@ -55,13 +55,13 @@ export const APTOS_DEVNET_CONFIG: NetworkConfig = {
 
 // Network configurations mapping
 export const NETWORK_CONFIGS: Record<string, NetworkConfig> = {
-  testnet: APTOS_TESTNET_CONFIG,
-  mainnet: APTOS_MAINNET_CONFIG,
-  devnet: APTOS_DEVNET_CONFIG
+  testnet: ALGOOS_TESTNET_CONFIG,
+  mainnet: ALGOOS_MAINNET_CONFIG,
+  devnet: ALGOOS_DEVNET_CONFIG
 };
 
 // Default network configuration
-export const DEFAULT_NETWORK = APTOS_TESTNET_CONFIG;
+export const DEFAULT_NETWORK = ALGOOS_TESTNET_CONFIG;
 
 // Network validation utilities
 export class NetworkValidator {
@@ -148,7 +148,7 @@ export class NetworkSwitcher {
 
 // Legacy exports for backward compatibility
 export const validateNetwork = NetworkValidator.isConnectedToTestnet;
-export const switchToTestnet = () => NetworkSwitcher.switchToNetwork(APTOS_TESTNET_CONFIG);
+export const switchToTestnet = () => NetworkSwitcher.switchToNetwork(ALGOOS_TESTNET_CONFIG);
 export const getNetworkStatusDisplay = (network: any) => {
   const isCorrect = NetworkValidator.isConnectedToTestnet(network);
   
@@ -175,4 +175,4 @@ export const getNetworkStatusDisplay = (network: any) => {
 };
 
 // Export default configuration
-export default APTOS_TESTNET_CONFIG;
+export default ALGOOS_TESTNET_CONFIG;

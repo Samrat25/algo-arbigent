@@ -139,9 +139,9 @@ export class SmartContractService {
   }
 
   /**
-   * Swap APT to USDC (vault deposit logic)
+   * Swap ALGO to USDC (vault deposit logic)
    */
-  async swapAPTtoUSDC(account: Account, aptAmount: string): Promise<TransactionResult> {
+  async swapALGOtoUSDC(account: Account, aptAmount: string): Promise<TransactionResult> {
     try {
       const transaction: InputTransactionData = {
         data: {
@@ -161,15 +161,15 @@ export class SmartContractService {
 
       return { success: true, hash: committedTxn.hash };
     } catch (error) {
-      console.error('Swap APT to USDC error:', error);
+      console.error('Swap ALGO to USDC error:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
   /**
-   * Swap APT to USDT (vault deposit logic)
+   * Swap ALGO to USDT (vault deposit logic)
    */
-  async swapAPTtoUSDT(account: Account, aptAmount: string): Promise<TransactionResult> {
+  async swapALGOtoUSDT(account: Account, aptAmount: string): Promise<TransactionResult> {
     try {
       const transaction: InputTransactionData = {
         data: {
@@ -189,15 +189,15 @@ export class SmartContractService {
 
       return { success: true, hash: committedTxn.hash };
     } catch (error) {
-      console.error('Swap APT to USDT error:', error);
+      console.error('Swap ALGO to USDT error:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
   /**
-   * Swap USDC to APT (vault withdrawal logic - burns USDC)
+   * Swap USDC to ALGO (vault withdrawal logic - burns USDC)
    */
-  async swapUSDCtoAPT(account: Account, usdcAmount: string): Promise<TransactionResult> {
+  async swapUSDCtoALGO(account: Account, usdcAmount: string): Promise<TransactionResult> {
     try {
       const transaction: InputTransactionData = {
         data: {
@@ -217,15 +217,15 @@ export class SmartContractService {
 
       return { success: true, hash: committedTxn.hash };
     } catch (error) {
-      console.error('Swap USDC to APT error:', error);
+      console.error('Swap USDC to ALGO error:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
   /**
-   * Swap USDT to APT (vault withdrawal logic - burns USDT)
+   * Swap USDT to ALGO (vault withdrawal logic - burns USDT)
    */
-  async swapUSDTtoAPT(account: Account, usdtAmount: string): Promise<TransactionResult> {
+  async swapUSDTtoALGO(account: Account, usdtAmount: string): Promise<TransactionResult> {
     try {
       const transaction: InputTransactionData = {
         data: {
@@ -245,7 +245,7 @@ export class SmartContractService {
 
       return { success: true, hash: committedTxn.hash };
     } catch (error) {
-      console.error('Swap USDT to APT error:', error);
+      console.error('Swap USDT to ALGO error:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }

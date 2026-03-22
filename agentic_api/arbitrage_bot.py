@@ -202,12 +202,17 @@ class AlgorandArbitrageBot:
                 print(f"❌ Unsupported swap: {from_token} → {to_token}")
                 return None
             
-            # Create application call transaction
+            # ALWAYS include both USDC and USDT in foreign_assets
+            # The contract may need to access these assets for inner transactions
+            foreign_assets = [USDC_ASSET_ID, USDT_ASSET_ID]
+            
+            # Create application call transaction with foreign_assets
             txn = transaction.ApplicationNoOpTxn(
                 sender=self.user_address,
                 sp=params,
                 index=APP_ID,
-                app_args=[operation.encode(), amount_micro.to_bytes(8, 'big')]
+                app_args=[operation.encode(), amount_micro.to_bytes(8, 'big')],
+                foreign_assets=foreign_assets  # Include all assets the contract might transfer
             )
             
             # Sign transaction

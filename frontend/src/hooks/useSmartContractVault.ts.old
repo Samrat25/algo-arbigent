@@ -16,10 +16,10 @@ export interface UseSmartContractVaultReturn {
   error: string | null;
   
   // Vault operations with smart contract integration
-  depositAPTtoVault: (amount: string, targetToken: 'USDC' | 'USDT') => Promise<boolean>;
-  depositAPTDirectToVault: (amount: string) => Promise<boolean>; // Direct APT deposit without conversion
+  depositALGOtoVault: (amount: string, targetToken: 'USDC' | 'USDT') => Promise<boolean>;
+  depositALGODirectToVault: (amount: string) => Promise<boolean>; // Direct ALGO deposit without conversion
   depositTokenToVault: (amount: string, token: 'USDC' | 'USDT') => Promise<boolean>;
-  withdrawFromVault: (amount: string, sourceToken: 'APT' | 'USDC' | 'USDT') => Promise<boolean>;
+  withdrawFromVault: (amount: string, sourceToken: 'ALGO' | 'USDC' | 'USDT') => Promise<boolean>;
   
   // Token minting for testing
   mintTestTokens: (token: 'USDC' | 'USDT', amount: string) => Promise<boolean>;
@@ -156,8 +156,8 @@ export const useSmartContractVault = (): UseSmartContractVaultReturn => {
     }
   }, [connected, account, submitTransaction]);
 
-  // Deposit APT directly to vault (without conversion to USDC/USDT)
-  const depositAPTDirectToVault = useCallback(async (
+  // Deposit ALGO directly to vault (without conversion to USDC/USDT)
+  const depositALGODirectToVault = useCallback(async (
     amount: string
   ): Promise<boolean> => {
     if (!connected || !account?.address) {
@@ -169,21 +169,21 @@ export const useSmartContractVault = (): UseSmartContractVaultReturn => {
     setError(null);
 
     try {
-      // Convert amount to smallest unit (APT has 8 decimals)
+      // Convert amount to smallest unit (ALGO has 8 decimals)
       const aptAmount = (parseFloat(amount) * Math.pow(10, 8)).toString();
       
 
       // Check wallet balance first
-      const walletBalance = await balanceService.fetchAPTBalance(account.address);
+      const walletBalance = await balanceService.fetchALGOBalance(account.address);
       const aptBalance = parseFloat(walletBalance || '0');
       const depositAmountNum = parseFloat(amount);
 
       if (depositAmountNum > aptBalance) {
-        setError(`Insufficient APT balance. You have ${aptBalance.toFixed(4)} APT`);
+        setError(`Insufficient ALGO balance. You have ${aptBalance.toFixed(4)} ALGO`);
         return false;
       }
 
-      // Use the direct APT vault deposit function
+      // Use the direct ALGO vault deposit function
       const transaction = {
         data: {
           function: `${CONTRACT_ADDRESS}::${MODULE_NAME}::deposit_apt_to_vault`,
@@ -196,29 +196,29 @@ export const useSmartContractVault = (): UseSmartContractVaultReturn => {
 
       if (result.success && result.hash) {
 
-        // Update vault balance in backend - record as APT
+        // Update vault balance in backend - record as ALGO
         await apiService.depositToVault(
           account.address,
-          'APT',
+          'ALGO',
           aptAmount,
           result.hash
         );
 
         return true;
       } else {
-        setError('APT vault deposit transaction failed');
+        setError('ALGO vault deposit transaction failed');
         return false;
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'APT vault deposit failed');
+      setError(err instanceof Error ? err.message : 'ALGO vault deposit failed');
       return false;
     } finally {
       setIsProcessing(false);
     }
   }, [connected, account, submitTransaction]);
 
-  // Deposit APT to vault (converts APT to USDC/USDT via smart contract)
-  const depositAPTtoVault = useCallback(async (
+  // Deposit ALGO to vault (converts ALGO to USDC/USDT via smart contract)
+  const depositALGOtoVault = useCallback(async (
     amount: string, 
     targetToken: 'USDC' | 'USDT'
   ): Promise<boolean> => {
@@ -231,12 +231,12 @@ export const useSmartContractVault = (): UseSmartContractVaultReturn => {
     setError(null);
 
     try {
-      // Convert amount to smallest unit (APT has 8 decimals)
+      // Convert amount to smallest unit (ALGO has 8 decimals)
       const aptAmount = (parseFloat(amount) * Math.pow(10, 8)).toString();
       
 
-      // Call smart contract to swap APT to USDC/USDT
-      // This should consume APT from wallet and mint USDC/USDT
+      // Call smart contract to swap ALGO to USDC/USDT
+      // This should consume ALGO from wallet and mint USDC/USDT
       const transaction = {
         type: "entry_function_payload",
         function: targetToken === 'USDC' 
@@ -252,7 +252,7 @@ export const useSmartContractVault = (): UseSmartContractVaultReturn => {
       if (result.success && result.hash) {
 
         // Calculate expected output amount
-        const targetAmount = await calculateSwapOutput(aptAmount, 'APT', targetToken);
+        const targetAmount = await calculateSwapOutput(aptAmount, 'ALGO', targetToken);
         
 
         // Update vault balance in backend - record as the target token (USDC/USDT)
@@ -269,17 +269,17 @@ export const useSmartContractVault = (): UseSmartContractVaultReturn => {
         return false;
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'APT deposit failed');
+      setError(err instanceof Error ? err.message : 'ALGO deposit failed');
       return false;
     } finally {
       setIsProcessing(false);
     }
   }, [connected, account, submitTransaction]);
 
-  // Withdraw from vault (mints tokens to wallet or transfers APT)
+  // Withdraw from vault (mints tokens to wallet or transfers ALGO)
   const withdrawFromVault = useCallback(async (
     amount: string, 
-    sourceToken: 'APT' | 'USDC' | 'USDT'
+    sourceToken: 'ALGO' | 'USDC' | 'USDT'
   ): Promise<boolean> => {
     if (!connected || !account?.address) {
       setError('Wallet not connected');
@@ -291,7 +291,7 @@ export const useSmartContractVault = (): UseSmartContractVaultReturn => {
 
     try {
       // Convert amount to smallest unit
-      const decimals = sourceToken === 'APT' ? 8 : 6;
+      const decimals = sourceToken === 'ALGO' ? 8 : 6;
       const tokenAmount = (parseFloat(amount) * Math.pow(10, decimals)).toString();
       
 
@@ -316,7 +316,7 @@ export const useSmartContractVault = (): UseSmartContractVaultReturn => {
 
       // Use the appropriate vault withdrawal function
       let functionName: string;
-      if (sourceToken === 'APT') {
+      if (sourceToken === 'ALGO') {
         functionName = `${CONTRACT_ADDRESS}::${MODULE_NAME}::withdraw_apt_from_vault`;
       } else if (sourceToken === 'USDC') {
         functionName = `${CONTRACT_ADDRESS}::${MODULE_NAME}::withdraw_usdc_from_vault`;
@@ -511,19 +511,19 @@ export const useSmartContractVault = (): UseSmartContractVaultReturn => {
       let outputInSmallestUnits = 0n;
 
 
-      if (fromToken === 'APT' && toToken === 'USDC') {
-        // APT to USDC: rate = 8000000 / 100000000 = 0.08 USDC per APT
-        // Input is in APT smallest units (8 decimals), output should be in USDC smallest units (6 decimals)
+      if (fromToken === 'ALGO' && toToken === 'USDC') {
+        // ALGO to USDC: rate = 8000000 / 100000000 = 0.08 USDC per ALGO
+        // Input is in ALGO smallest units (8 decimals), output should be in USDC smallest units (6 decimals)
         outputInSmallestUnits = (inputInSmallestUnits * 8000000n) / 100000000n;
-      } else if (fromToken === 'APT' && toToken === 'USDT') {
-        // APT to USDT: rate = 8050000 / 100000000 = 0.08050 USDT per APT
+      } else if (fromToken === 'ALGO' && toToken === 'USDT') {
+        // ALGO to USDT: rate = 8050000 / 100000000 = 0.08050 USDT per ALGO
         outputInSmallestUnits = (inputInSmallestUnits * 8050000n) / 100000000n;
-      } else if (fromToken === 'USDC' && toToken === 'APT') {
-        // USDC to APT: rate = 12500000 / 1000000 = 12.5 APT per USDC
-        // Input is in USDC smallest units (6 decimals), output should be in APT smallest units (8 decimals)
+      } else if (fromToken === 'USDC' && toToken === 'ALGO') {
+        // USDC to ALGO: rate = 12500000 / 1000000 = 12.5 ALGO per USDC
+        // Input is in USDC smallest units (6 decimals), output should be in ALGO smallest units (8 decimals)
         outputInSmallestUnits = (inputInSmallestUnits * 12500000n) / 1000000n;
-      } else if (fromToken === 'USDT' && toToken === 'APT') {
-        // USDT to APT: rate = 12400000 / 1000000 = 12.4 APT per USDT
+      } else if (fromToken === 'USDT' && toToken === 'ALGO') {
+        // USDT to ALGO: rate = 12400000 / 1000000 = 12.4 ALGO per USDT
         outputInSmallestUnits = (inputInSmallestUnits * 12400000n) / 1000000n;
       } else if (fromToken === 'USDC' && toToken === 'USDT') {
         // USDC to USDT: rate = 9995 / 10000 = 0.9995
@@ -549,8 +549,8 @@ export const useSmartContractVault = (): UseSmartContractVaultReturn => {
   return {
     isProcessing,
     error,
-    depositAPTtoVault,
-    depositAPTDirectToVault,
+    depositALGOtoVault,
+    depositALGODirectToVault,
     depositTokenToVault,
     withdrawFromVault,
     mintTestTokens,

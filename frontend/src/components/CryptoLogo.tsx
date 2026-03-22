@@ -17,12 +17,12 @@ const CryptoLogo = ({ symbol, size = "md", className = "" }: CryptoLogoProps) =>
     lg: "text-sm",
   };
 
-  if (symbol === "APT") {
+  if (symbol === "ALGO") {
     return (
       <div className={`${sizeClasses[size]} relative flex items-center justify-center rounded-full overflow-hidden shadow-lg ${className}`}>
         <img 
           src="/aptos_icon.png" 
-          alt="APT" 
+          alt="ALGO" 
           className="h-full w-full object-cover"
         />
       </div>

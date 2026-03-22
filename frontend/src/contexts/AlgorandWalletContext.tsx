@@ -254,13 +254,18 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
         suggestedParams: params
       });
 
-      // Create app call transaction
+      // Create app call transaction with increased fee to cover potential inner transactions
+      const appCallParams = { ...params };
+      appCallParams.fee = 2000; // 2x min fee to cover app call + potential inner txn
+      appCallParams.flatFee = true;
+      
       const encoder = new TextEncoder();
       const appCallTxn = algosdk.makeApplicationNoOpTxnFromObject({
         from: account.address,
         appIndex: APP_ID,
         appArgs: [encoder.encode('deposit_algo')],
-        suggestedParams: params
+        foreignAssets: [USDC_ASSET_ID, USDT_ASSET_ID], // Include all assets for inner transactions
+        suggestedParams: appCallParams
       });
 
       // Group transactions
@@ -329,13 +334,18 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
         suggestedParams: params
       });
 
-      // Create app call transaction
+      // Create app call transaction with increased fee to cover potential inner transactions
+      const appCallParams = { ...params };
+      appCallParams.fee = 2000; // 2x min fee to cover app call + potential inner txn
+      appCallParams.flatFee = true;
+      
       const encoder = new TextEncoder();
       const appCallTxn = algosdk.makeApplicationNoOpTxnFromObject({
         from: account.address,
         appIndex: APP_ID,
         appArgs: [encoder.encode(`deposit_${token.toLowerCase()}`)],
-        suggestedParams: params
+        foreignAssets: [USDC_ASSET_ID, USDT_ASSET_ID], // Include all assets for inner transactions
+        suggestedParams: appCallParams
       });
 
       // Group transactions
@@ -394,6 +404,11 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       const params = await algodClient.getTransactionParams().do();
       const amountMicro = Math.floor(parseFloat(amount) * 1000000);
 
+      // Increase fee to cover inner transaction (withdrawal creates inner txn)
+      const appCallParams = { ...params };
+      appCallParams.fee = 2000; // 2x min fee to cover app call + inner txn
+      appCallParams.flatFee = true;
+
       const encoder = new TextEncoder();
       const appCallTxn = algosdk.makeApplicationNoOpTxnFromObject({
         from: account.address,
@@ -402,7 +417,8 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
           encoder.encode(`withdraw_${sourceToken.toLowerCase()}`),
           algosdk.encodeUint64(amountMicro)
         ],
-        suggestedParams: params
+        foreignAssets: [USDC_ASSET_ID, USDT_ASSET_ID], // Include all assets for inner transactions
+        suggestedParams: appCallParams
       });
 
       // Sign and send using v4 API
@@ -457,6 +473,11 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       const params = await algodClient.getTransactionParams().do();
       const amountMicro = Math.floor(parseFloat(amount) * 1000000);
 
+      // Swaps don't create inner txns, but use standard fee
+      const appCallParams = { ...params };
+      appCallParams.fee = 1000; // Standard min fee
+      appCallParams.flatFee = true;
+
       const encoder = new TextEncoder();
       const appCallTxn = algosdk.makeApplicationNoOpTxnFromObject({
         from: account.address,
@@ -465,7 +486,8 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
           encoder.encode(`swap_${fromToken.toLowerCase()}_to_${toToken.toLowerCase()}`),
           algosdk.encodeUint64(amountMicro)
         ],
-        suggestedParams: params
+        foreignAssets: [USDC_ASSET_ID, USDT_ASSET_ID], // Include all assets for inner transactions
+        suggestedParams: appCallParams
       });
 
       // Sign and send using v4 API
@@ -499,6 +521,11 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       const params = await algodClient.getTransactionParams().do();
       const amountMicro = Math.floor(parseFloat(inputAmount) * 1000000);
 
+      // Arbitrage might create inner txns, use higher fee
+      const appCallParams = { ...params };
+      appCallParams.fee = 2000; // 2x min fee to cover potential inner txns
+      appCallParams.flatFee = true;
+
       const encoder = new TextEncoder();
       const appCallTxn = algosdk.makeApplicationNoOpTxnFromObject({
         from: account.address,
@@ -507,7 +534,8 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
           encoder.encode('execute_arbitrage'),
           algosdk.encodeUint64(amountMicro)
         ],
-        suggestedParams: params
+        foreignAssets: [USDC_ASSET_ID, USDT_ASSET_ID], // Include all assets for inner transactions
+        suggestedParams: appCallParams
       });
 
       // Sign and send using v4 API

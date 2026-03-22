@@ -14,13 +14,13 @@ const seedCoins = async () => {
     
     const coins = [
       {
-        symbol: 'APT',
+        symbol: 'ALGO',
         name: 'Aptos',
         contractAddress: '0x1::aptos_coin::AptosCoin',
         coinType: '0x1::aptos_coin::AptosCoin',
         decimals: 8,
-        totalSupply: '1000000000000000000', // 10B APT
-        circulatingSupply: '500000000000000000', // 5B APT
+        totalSupply: '1000000000000000000', // 10B ALGO
+        circulatingSupply: '500000000000000000', // 5B ALGO
         isNative: true,
         metadata: {
           description: 'Native token of the Aptos blockchain',
@@ -29,8 +29,8 @@ const seedCoins = async () => {
         },
         vaultConfig: {
           isVaultEnabled: true,
-          minDepositAmount: '100000000', // 1 APT
-          maxDepositAmount: '10000000000000000', // 100M APT
+          minDepositAmount: '100000000', // 1 ALGO
+          maxDepositAmount: '10000000000000000', // 100M ALGO
           depositFee: 0.1,
           withdrawalFee: 0.1
         }

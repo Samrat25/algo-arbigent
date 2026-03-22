@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 export interface TokenPrices {
-  APT: number;
+  ALGO: number;
   USDC: number;
   USDT: number;
 }
@@ -9,7 +9,7 @@ export interface TokenPrices {
 export interface PriceDataPoint {
   time: string;
   seconds: number;
-  APT: number;
+  ALGO: number;
   USDC: number;
   USDT: number;
 }
@@ -23,12 +23,12 @@ export interface UseLivePricesReturn {
 }
 
 // Coinbase API endpoints
-const COINBASE_APT_API = 'https://api.coinbase.com/v2/prices/APT-USD/spot';
+const COINBASE_ALGO_API = 'https://api.coinbase.com/v2/prices/ALGO-USD/spot';
 const COINBASE_USDC_API = 'https://api.coinbase.com/v2/prices/USDC-USD/spot';
 const COINBASE_USDT_API = 'https://api.coinbase.com/v2/prices/USDT-USD/spot';
 
 export const useLivePrices = (refreshInterval: number = 3000): UseLivePricesReturn => {
-  const [prices, setPrices] = useState<TokenPrices>({ APT: 0, USDC: 1, USDT: 1 });
+  const [prices, setPrices] = useState<TokenPrices>({ ALGO: 0, USDC: 1, USDT: 1 });
   const [priceHistory, setPriceHistory] = useState<PriceDataPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,19 +37,19 @@ export const useLivePrices = (refreshInterval: number = 3000): UseLivePricesRetu
 
   const fetchPrices = useCallback(async () => {
     try {
-      const [aptResponse, usdcResponse, usdtResponse] = await Promise.all([
-        fetch(COINBASE_APT_API),
+      const [algoResponse, usdcResponse, usdtResponse] = await Promise.all([
+        fetch(COINBASE_ALGO_API),
         fetch(COINBASE_USDC_API),
         fetch(COINBASE_USDT_API)
       ]);
       
-      let aptPrice = 0;
+      let algoPrice = 0;
       let usdcPrice = 1;
       let usdtPrice = 1;
       
-      if (aptResponse.ok) {
-        const aptData = await aptResponse.json();
-        aptPrice = parseFloat(aptData.data?.amount) || 0;
+      if (algoResponse.ok) {
+        const algoData = await algoResponse.json();
+        algoPrice = parseFloat(algoData.data?.amount) || 0;
       }
       
       if (usdcResponse.ok) {
@@ -63,7 +63,7 @@ export const useLivePrices = (refreshInterval: number = 3000): UseLivePricesRetu
       }
       
       const newPrices: TokenPrices = {
-        APT: aptPrice,
+        ALGO: algoPrice,
         USDC: usdcPrice,
         USDT: usdtPrice
       };
@@ -79,7 +79,7 @@ export const useLivePrices = (refreshInterval: number = 3000): UseLivePricesRetu
       const newDataPoint: PriceDataPoint = {
         time: `${elapsedSeconds}s`,
         seconds: elapsedSeconds,
-        APT: aptPrice,
+        ALGO: algoPrice,
         USDC: usdcPrice,
         USDT: usdtPrice
       };

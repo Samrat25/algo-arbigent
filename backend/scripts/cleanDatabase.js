@@ -103,10 +103,10 @@ async function cleanDatabase() {
     );
     console.log('   ✅ USDT updated');
 
-    // Remove old Aptos coins (APT)
-    const aptDeleted = await Coin.deleteMany({ symbol: 'APT' });
+    // Remove old Aptos coins (ALGO)
+    const aptDeleted = await Coin.deleteMany({ symbol: 'ALGO' });
     if (aptDeleted.deletedCount > 0) {
-      console.log(`   🗑️  Removed ${aptDeleted.deletedCount} APT coin entries`);
+      console.log(`   🗑️  Removed ${aptDeleted.deletedCount} ALGO coin entries`);
     }
 
     console.log('\n' + '=' .repeat(60));

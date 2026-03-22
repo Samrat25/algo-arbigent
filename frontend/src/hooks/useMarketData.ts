@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiService, MarketData, ArbitrageOpportunity } from '@/services/ApiService';
 
 // Coinbase API endpoints
-const COINBASE_APT_API = 'https://api.coinbase.com/v2/prices/APT-USD/spot';
+const COINBASE_ALGO_API = 'https://api.coinbase.com/v2/prices/ALGO-USD/spot';
 const COINBASE_USDC_API = 'https://api.coinbase.com/v2/prices/USDC-USD/spot';
 const COINBASE_USDT_API = 'https://api.coinbase.com/v2/prices/USDT-USD/spot';
 
@@ -39,20 +39,20 @@ export const useMarketData = (refreshInterval: number = 5000): UseMarketDataRetu
       setError(null);
       
       // Fetch live prices from Coinbase API
-      let aptPrice = 0;
+      let algoPrice = 0;
       let usdcPrice = 1;
       let usdtPrice = 1;
       
       try {
-        const [aptResponse, usdcResponse, usdtResponse] = await Promise.all([
-          fetch(COINBASE_APT_API),
+        const [algoResponse, usdcResponse, usdtResponse] = await Promise.all([
+          fetch(COINBASE_ALGO_API),
           fetch(COINBASE_USDC_API),
           fetch(COINBASE_USDT_API)
         ]);
         
-        if (aptResponse.ok) {
-          const aptData = await aptResponse.json();
-          aptPrice = parseFloat(aptData.data?.amount) || 0;
+        if (algoResponse.ok) {
+          const algoData = await algoResponse.json();
+          algoPrice = parseFloat(algoData.data?.amount) || 0;
         }
         
         if (usdcResponse.ok) {
@@ -77,13 +77,13 @@ export const useMarketData = (refreshInterval: number = 5000): UseMarketDataRetu
       
       // Build token prices with live Coinbase data
       const prices: Record<string, TokenPrice> = {
-        APT: {
-          symbol: 'APT',
-          price: `$${aptPrice.toFixed(2)}`,
-          priceNum: aptPrice,
+        ALGO: {
+          symbol: 'ALGO',
+          price: `$${algoPrice.toFixed(2)}`,
+          priceNum: algoPrice,
           change: '+0.0%',
-          marketCap: marketResponse.data?.chains.find(c => c.chain === 'apt')?.market_cap || 'N/A',
-          volume24h: marketResponse.data?.chains.find(c => c.chain === 'apt')?.volume_24h || 'N/A'
+          marketCap: marketResponse.data?.chains.find(c => c.chain === 'algo')?.market_cap || 'N/A',
+          volume24h: marketResponse.data?.chains.find(c => c.chain === 'algo')?.volume_24h || 'N/A'
         },
         USDC: {
           symbol: 'USDC',
@@ -118,7 +118,7 @@ export const useMarketData = (refreshInterval: number = 5000): UseMarketDataRetu
       // Use current token prices for more accurate opportunities
       const currentPrices = [
         {
-          apt: tokenPrices.APT?.priceNum?.toString() || "12.45",
+          algo: tokenPrices.ALGO?.priceNum?.toString() || "0.30",
           usdc: tokenPrices.USDC?.priceNum?.toString() || "1.0",
           usdt: tokenPrices.USDT?.priceNum?.toString() || "0.999"
         }
@@ -128,7 +128,7 @@ export const useMarketData = (refreshInterval: number = 5000): UseMarketDataRetu
         trade_amount: 1000,
         dex_fees: { 'Smart Contract': 0.30 },
         current_prices: currentPrices,
-        apt_price: tokenPrices.APT?.priceNum?.toString() || "12.45"
+        algo_price: tokenPrices.ALGO?.priceNum?.toString() || "0.30"
       });
       
       if (response.success && response.data?.opportunities?.top_opportunities) {
@@ -164,10 +164,10 @@ export const useMarketData = (refreshInterval: number = 5000): UseMarketDataRetu
 
   // Fetch opportunities after market data is loaded
   useEffect(() => {
-    if (tokenPrices.APT?.priceNum) {
+    if (tokenPrices.ALGO?.priceNum) {
       fetchOpportunities();
     }
-  }, [fetchOpportunities, tokenPrices.APT?.priceNum]);
+  }, [fetchOpportunities, tokenPrices.ALGO?.priceNum]);
 
   useEffect(() => {
     if (refreshInterval > 0) {

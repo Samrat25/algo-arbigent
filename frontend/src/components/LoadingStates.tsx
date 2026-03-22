@@ -72,7 +72,7 @@ interface BalanceLoadingProps {
 }
 
 export const BalanceLoading: React.FC<BalanceLoadingProps> = ({
-  tokens = ['APT', 'USDC', 'USDT'],
+  tokens = ['ALGO', 'USDC', 'USDT'],
   className = ''
 }) => {
   return (

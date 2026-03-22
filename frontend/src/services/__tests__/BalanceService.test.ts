@@ -7,9 +7,9 @@ class MockBalanceService {
   private cache: Map<string, { balance: string; timestamp: number }> = new Map();
   private readonly CACHE_DURATION = 30000;
 
-  async fetchAPTBalance(address: string): Promise<string> {
+  async fetchALGOBalance(address: string): Promise<string> {
     // Simulate API call with mock data
-    return this.simulateBalance(address, 'APT');
+    return this.simulateBalance(address, 'ALGO');
   }
 
   async fetchUSDCBalance(address: string): Promise<string> {
@@ -22,12 +22,12 @@ class MockBalanceService {
 
   async fetchAllBalances(address: string): Promise<TokenBalances> {
     const [apt, usdc, usdt] = await Promise.all([
-      this.fetchAPTBalance(address),
+      this.fetchALGOBalance(address),
       this.fetchUSDCBalance(address),
       this.fetchUSDTBalance(address)
     ]);
 
-    return { APT: apt, USDC: usdc, USDT: usdt };
+    return { ALGO: apt, USDC: usdc, USDT: usdt };
   }
 
   async refreshBalances(address: string): Promise<TokenBalances> {
@@ -116,27 +116,27 @@ describe('BalanceService Property Tests', () => {
           const balances = await balanceService.fetchAllBalances(testAddress);
 
           // Property: All supported tokens should be present in the result
-          expect(balances).toHaveProperty('APT');
+          expect(balances).toHaveProperty('ALGO');
           expect(balances).toHaveProperty('USDC');
           expect(balances).toHaveProperty('USDT');
 
           // Property: Balance values should be strings representing valid numbers
-          expect(typeof balances.APT).toBe('string');
+          expect(typeof balances.ALGO).toBe('string');
           expect(typeof balances.USDC).toBe('string');
           expect(typeof balances.USDT).toBe('string');
 
           // Property: Balance values should be non-negative numbers when parsed
-          expect(parseFloat(balances.APT)).toBeGreaterThanOrEqual(0);
+          expect(parseFloat(balances.ALGO)).toBeGreaterThanOrEqual(0);
           expect(parseFloat(balances.USDC)).toBeGreaterThanOrEqual(0);
           expect(parseFloat(balances.USDT)).toBeGreaterThanOrEqual(0);
 
           // Property: Balance values should not be NaN
-          expect(isNaN(parseFloat(balances.APT))).toBe(false);
+          expect(isNaN(parseFloat(balances.ALGO))).toBe(false);
           expect(isNaN(parseFloat(balances.USDC))).toBe(false);
           expect(isNaN(parseFloat(balances.USDT))).toBe(false);
 
           // Property: Result should always have the correct structure
-          const expectedKeys = ['APT', 'USDC', 'USDT'];
+          const expectedKeys = ['ALGO', 'USDC', 'USDT'];
           expect(Object.keys(balances).sort()).toEqual(expectedKeys.sort());
         }
       ),
@@ -162,7 +162,7 @@ describe('BalanceService Property Tests', () => {
           const initial = await balanceService.fetchAllBalances(testAddress);
 
           // Property: Initial fetch should return valid balances
-          expect(initial).toHaveProperty('APT');
+          expect(initial).toHaveProperty('ALGO');
           expect(initial).toHaveProperty('USDC');
           expect(initial).toHaveProperty('USDT');
 
@@ -170,7 +170,7 @@ describe('BalanceService Property Tests', () => {
           const refreshed = await balanceService.refreshBalances(testAddress);
 
           // Property: Refresh should return updated balances
-          expect(refreshed).toHaveProperty('APT');
+          expect(refreshed).toHaveProperty('ALGO');
           expect(refreshed).toHaveProperty('USDC');
           expect(refreshed).toHaveProperty('USDT');
 
@@ -199,7 +199,7 @@ describe('BalanceService Property Tests', () => {
       fc.asyncProperty(
         fc.record({
           address: fc.string({ minLength: 10, maxLength: 66 }).filter(addr => addr.startsWith('0x') || !addr.includes(' ')),
-          tokenType: fc.constantFrom('APT', 'USDC', 'USDT')
+          tokenType: fc.constantFrom('ALGO', 'USDC', 'USDT')
         }),
         async ({ address, tokenType }) => {
           const testAddress = address.startsWith('0x') ? address : `0x${address}`;
@@ -208,8 +208,8 @@ describe('BalanceService Property Tests', () => {
           let tokenBalance: string;
           
           switch (tokenType) {
-            case 'APT':
-              tokenBalance = await balanceService.fetchAPTBalance(testAddress);
+            case 'ALGO':
+              tokenBalance = await balanceService.fetchALGOBalance(testAddress);
               break;
             case 'USDC':
               tokenBalance = await balanceService.fetchUSDCBalance(testAddress);
@@ -244,12 +244,12 @@ describe('BalanceService Property Tests', () => {
           const balances = await balanceService.fetchAllBalances(testAddress);
           
           // Property: Service should always return valid balance structure
-          expect(balances.APT).toBeDefined();
+          expect(balances.ALGO).toBeDefined();
           expect(balances.USDC).toBeDefined();
           expect(balances.USDT).toBeDefined();
           
           // Property: All balances should be valid numbers
-          expect(isNaN(parseFloat(balances.APT))).toBe(false);
+          expect(isNaN(parseFloat(balances.ALGO))).toBe(false);
           expect(isNaN(parseFloat(balances.USDC))).toBe(false);
           expect(isNaN(parseFloat(balances.USDT))).toBe(false);
         }
@@ -268,10 +268,10 @@ describe('BalanceService Property Tests', () => {
           const testAddress = address.startsWith('0x') ? address : `0x${address}`;
 
           // First call should populate cache
-          const firstResult = await balanceService.fetchAPTBalance(testAddress);
+          const firstResult = await balanceService.fetchALGOBalance(testAddress);
 
           // Second call should use cache (same result)
-          const secondResult = await balanceService.fetchAPTBalance(testAddress);
+          const secondResult = await balanceService.fetchALGOBalance(testAddress);
 
           // Property: Cached results should be identical
           expect(firstResult).toBe(secondResult);
@@ -303,9 +303,9 @@ describe('BalanceService Unit Tests', () => {
   });
 
   it('should have correct token configurations', () => {
-    expect(TOKEN_CONFIGS.APT.symbol).toBe('APT');
-    expect(TOKEN_CONFIGS.APT.decimals).toBe(8);
-    expect(TOKEN_CONFIGS.APT.coinType).toBe('0x1::aptos_coin::AptosCoin');
+    expect(TOKEN_CONFIGS.ALGO.symbol).toBe('ALGO');
+    expect(TOKEN_CONFIGS.ALGO.decimals).toBe(8);
+    expect(TOKEN_CONFIGS.ALGO.coinType).toBe('0x1::aptos_coin::AptosCoin');
 
     expect(TOKEN_CONFIGS.USDC.symbol).toBe('USDC');
     expect(TOKEN_CONFIGS.USDC.decimals).toBe(6);
@@ -316,7 +316,7 @@ describe('BalanceService Unit Tests', () => {
 
   it('should format balances correctly', async () => {
     // Test that balances are returned as strings
-    const balance = await balanceService.fetchAPTBalance('0x123');
+    const balance = await balanceService.fetchALGOBalance('0x123');
     expect(typeof balance).toBe('string');
     expect(isNaN(parseFloat(balance))).toBe(false);
   });
