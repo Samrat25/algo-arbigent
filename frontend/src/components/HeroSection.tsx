@@ -1,9 +1,24 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, LayoutDashboard } from "lucide-react";
 import PriceChart from "./PriceChart";
 import ShapeGrid from "@/components/ShapeGrid";
+import { useState } from "react";
+import { useAlgorandWallet } from "@/contexts/AlgorandWalletContext";
+import { WalletModal } from "./WalletModal";
+import { useNavigate } from "react-router-dom";
 
 const HeroSection = () => {
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const { connected } = useAlgorandWallet();
+  const navigate = useNavigate();
+
+  const handleCtaClick = () => {
+    if (connected) {
+      navigate('/dashboard');
+    } else {
+      setIsWalletModalOpen(true);
+    }
+  };
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
       {/* ShapeGrid Background */}
@@ -47,8 +62,16 @@ const HeroSection = () => {
               className="flex flex-wrap gap-4 mb-16 opacity-0 animate-fade-up"
               style={{ animationDelay: "0.3s" }}
             >
-              <Button variant="hero" size="lg">
-                Connect Wallet <ArrowRight className="ml-1 w-4 h-4" />
+              <Button 
+                variant="hero" 
+                size="lg"
+                onClick={handleCtaClick}
+              >
+                {connected ? (
+                  <>Go to Dashboard <LayoutDashboard className="ml-1 w-4 h-4" /></>
+                ) : (
+                  <>Connect Wallet <ArrowRight className="ml-1 w-4 h-4" /></>
+                )}
               </Button>
               <Button variant="heroOutline" size="lg">
                 Learn More
@@ -92,6 +115,11 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
+      
+      <WalletModal 
+        open={isWalletModalOpen} 
+        onOpenChange={setIsWalletModalOpen}
+      />
     </section>
   );
 };

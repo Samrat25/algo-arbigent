@@ -5,13 +5,14 @@ import {
   ArrowLeft, Play, Square, Settings, Wallet, 
   Activity, Shield, RefreshCw
 } from "lucide-react";
-import Header from "@/components/Header";
+import Navbar from "@/components/Navbar";
+import ShapeGrid from "@/components/ShapeGrid";
 import PriceChart from "@/components/PriceChart";
 import Terminal from "@/components/Terminal";
 import CryptoLogo from "@/components/CryptoLogo";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { useAlgorandWallet as useWallet } from '@/contexts/AlgorandWalletContext';
+import { useAlgorandWallet } from '@/contexts/AlgorandWalletContext';
 import { apiService } from "@/services/ApiService";
 import { useLivePrices } from "@/hooks/useLivePrices";
 import { useArbiGent } from "@/hooks/useArbiGent";
@@ -25,12 +26,24 @@ interface VaultTokenBalance {
   walletUsdValue?: string; // NEW: Wallet balance in USD
 }
 
-// Low-brightness animated background component (matches Vault.tsx style)
-const AnimatedBackground = () => (
-  <div className="fixed inset-0 pointer-events-none">
-    <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/[0.07] rounded-full blur-3xl animate-pulse" />
-    <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/[0.07] rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-primary/[0.03] to-orange-500/[0.03] rounded-full blur-3xl" />
+const USDC_ASSET_ID = parseInt(import.meta.env.VITE_USDC_ASSET_ID || '0');
+const USDT_ASSET_ID = parseInt(import.meta.env.VITE_USDT_ASSET_ID || '0');
+
+// Global Background matching the rest of the page
+const GlobalBackground = () => (
+  <div className="fixed inset-0 z-0 opacity-40 pointer-events-none">
+    <ShapeGrid 
+      speed={0}
+      squareSize={77}
+      direction="diagonal"
+      borderColor="#271E37"
+      hoverFillColor="#222222"
+      shape="square"
+      hoverTrailAmount={0}
+    />
+    {/* Purple glow orbs */}
+    <div className="absolute top-1/4 right-1/3 w-[500px] h-[500px] rounded-full bg-primary/8 blur-[120px] pointer-events-none" />
+    <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] rounded-full bg-primary/5 blur-[100px] pointer-events-none" />
   </div>
 );
 
@@ -44,7 +57,7 @@ const Agents = () => {
   const [totalUsdValue, setTotalUsdValue] = useState("0.00");
   const [isLoadingVault, setIsLoadingVault] = useState(false);
   
-  const { account, connected } = useWallet();
+  const { account, connected } = useAlgorandWallet();
   const { prices } = useLivePrices(1000);
   
   // ArbiGent hook
@@ -148,7 +161,7 @@ const Agents = () => {
         setTotalUsdValue(total.toFixed(2));
         
         // Update agent with vault balances
-        updateAgentVaultBalances(agentBalances);
+        updateAgentVaultBalances({ ...agentBalances, APT: 0 });
       }
     } catch (err) {
       console.error('Failed to fetch vault balances:', err);
@@ -194,11 +207,12 @@ const Agents = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background dark relative overflow-hidden">
-      <Header />
+    <div className="min-h-screen bg-background dark text-foreground relative overflow-hidden selection:bg-primary/30">
+      <GlobalBackground />
+      <Navbar />
       
-      <main className="pt-24 pb-16 relative z-10">
-        <div className="container mx-auto px-4 lg:px-8">
+      <main className="pt-32 pb-16 relative z-10">
+        <div className="container mx-auto px-6 lg:px-12 max-w-7xl">
           {/* Back Link */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -207,11 +221,15 @@ const Agents = () => {
           >
             <Link 
               to="/dashboard" 
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-8"
+              className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors mb-8 group"
             >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
+              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+              BACK TO COMMAND CENTER
             </Link>
+            <h1 className="font-hero text-4xl lg:text-6xl font-bold tracking-tight text-white mb-4 uppercase">
+              Agent <span className="text-primary glow-text">Fleet</span>
+            </h1>
+            <p className="text-muted-foreground text-lg max-w-2xl mb-12">Deploy and manage your autonomous arbitrage intelligence force.</p>
           </motion.div>
 
           {/* Active Agents Status - New Section */}
@@ -222,55 +240,56 @@ const Agents = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="mb-6"
+            className="mb-12"
           >
-            <div className="rounded-xl border border-border bg-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-display text-xl font-bold tracking-wide text-foreground flex items-center gap-2">
-                  <Wallet className="h-5 w-5 text-primary" />
-                  VAULT BALANCES
+            <div className="rounded-3xl border border-primary bg-black/40 backdrop-blur-xl p-8 shadow-[0_0_20px_rgba(255,138,0,0.15)] relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] -mr-32 -mt-32" />
+              
+              <div className="flex items-center justify-between mb-8 relative z-10">
+                <h2 className="font-hero text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+                  <Wallet className="h-6 w-6 text-primary" />
+                  FLEET CAPITAL
                 </h2>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-6">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={fetchVaultBalances}
                     disabled={isLoadingVault}
-                    className="h-8 px-3"
+                    className="text-primary hover:text-primary hover:bg-white/5"
                   >
-                    <RefreshCw className={`h-4 w-4 ${isLoadingVault ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingVault ? 'animate-spin' : ''}`} />
+                    SYNC
                   </Button>
                   <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Total Value</p>
-                    <p className="font-mono font-bold text-lg text-primary">${totalUsdValue}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Total Operations Value</p>
+                    <p className="font-hero font-bold text-3xl text-primary glow-text">${totalUsdValue}</p>
                   </div>
                 </div>
               </div>
               
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
                 {vaultBalances.map((balance) => (
                   <div 
                     key={balance.token} 
-                    className="p-4 rounded-lg bg-muted/50 border border-border hover:border-primary/50 transition-colors"
+                    className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-primary/50 transition-all duration-500 hover:shadow-[0_0_15px_rgba(255,138,0,0.1)] group"
                   >
-                    <div className="flex items-center gap-3 mb-3">
-                      <CryptoLogo symbol={balance.token} size="sm" />
-                      <div className="flex flex-col">
-                        <span className="font-mono text-sm font-semibold text-foreground">{balance.token}</span>
-                        <span className="font-mono text-xs text-muted-foreground">Vault</span>
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <CryptoLogo symbol={balance.token} size="sm" />
+                        <span className="font-hero text-lg font-bold text-white tracking-tight">{balance.token}</span>
                       </div>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold bg-white/5 px-2 py-1 rounded border border-white/5">Vault Asset</span>
                     </div>
                     
-                    {/* Vault Balance */}
-                    <div className="mb-3 pb-3 border-b border-border/50">
-                      <p className="font-mono text-xl font-bold text-foreground">{balance.amount}</p>
-                      <p className="text-xs text-muted-foreground">${balance.usdValue}</p>
+                    <div className="mb-4">
+                      <p className="text-3xl font-bold text-white group-hover:text-primary transition-colors">{balance.amount}</p>
+                      <p className="text-sm text-muted-foreground font-medium">${balance.usdValue}</p>
                     </div>
                     
-                    {/* Wallet Balance */}
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Wallet: {balance.walletAmount || '0.00'}</p>
-                      <p className="text-xs text-muted-foreground">${balance.walletUsdValue || '0.00'}</p>
+                    <div className="pt-4 border-t border-white/5 flex justify-between items-baseline">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Liquid Wallet</span>
+                      <span className="text-sm font-bold text-white opacity-60">{balance.walletAmount || '0.00'}</span>
                     </div>
                   </div>
                 ))}
@@ -287,10 +306,10 @@ const Agents = () => {
               className="lg:col-span-1 space-y-6"
             >
               {/* Config Panel */}
-              <div className="rounded-xl border border-border bg-card p-6 sticky top-24">
-                <h2 className="font-display text-xl font-bold tracking-wide text-foreground mb-6 flex items-center gap-2">
-                  <Settings className="h-5 w-5 text-primary" />
-                  AGENT CONFIGURATION
+              <div className="rounded-3xl border border-primary bg-black/40 backdrop-blur-xl p-8 shadow-[0_0_20px_rgba(255,138,0,0.15)] sticky top-32">
+                <h2 className="font-hero text-2xl font-bold tracking-tight text-white mb-8 flex items-center gap-3">
+                  <Settings className="h-6 w-6 text-primary" />
+                  CONFIGURATION
                 </h2>
                 
                 {/* Min Profitability */}
@@ -506,74 +525,61 @@ const Agents = () => {
                 </div>
                 
                 {/* Action Buttons */}
-                <div className="space-y-3">
+                <div className="space-y-4 pt-4">
                   {!isRunning ? (
                     <Button 
-                      variant="glow" 
+                      variant="hero" 
                       size="lg" 
-                      className="w-full font-display tracking-wide font-bold"
+                      className="w-full font-hero text-lg tracking-wider font-bold py-8 rounded-2xl shadow-[0_0_20px_rgba(255,138,0,0.3)]"
                       onClick={handleStartAgent}
                     >
-                      <Play className="h-5 w-5" />
-                      START AGENT
+                      <Play className="h-6 w-6 mr-2 fill-current" />
+                      DEPLOY AGENT
                     </Button>
                   ) : (
                     <Button 
                       variant="outline" 
                       size="lg" 
-                      className="w-full font-display tracking-wide font-bold border-destructive/50 text-destructive hover:bg-destructive/10"
+                      className="w-full font-hero text-lg tracking-wider font-bold py-8 rounded-2xl border-destructive/50 text-destructive hover:bg-destructive/10 transition-all"
                       onClick={handleStopAgent}
                     >
-                      <Square className="h-5 w-5" />
-                      STOP AGENT
+                      <Square className="h-6 w-6 mr-2 fill-current" />
+                      SECURE TERMINATION
                     </Button>
                   )}
                   
                   {isRunning && (
-                    <div className="p-3 rounded-lg bg-success/10 border border-success/30">
-                      <div className="flex items-center justify-center gap-2 text-success mb-2">
-                        <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                        <span className="font-display tracking-wide font-bold">AGENT ACTIVE</span>
+                    <div className="p-6 rounded-2xl bg-success/10 border border-success/30 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-success/10 rounded-full blur-xl -mr-8 -mt-8" />
+                      
+                      <div className="flex items-center justify-center gap-3 text-success mb-6 relative z-10">
+                        <div className="w-2.5 h-2.5 rounded-full bg-success animate-pulse" />
+                        <span className="font-hero tracking-widest font-bold text-sm">OPERATIONAL</span>
                       </div>
-                      <p className="text-xs text-muted-foreground text-center mb-3">Running for: {runningDuration}</p>
                       
                       {/* Profit Display */}
-                      <div className="p-2 rounded bg-success/20 border border-success/30 mb-3">
+                      <div className="p-4 rounded-xl bg-black/40 border border-success/30 mb-6 relative z-10">
                         <div className="text-center">
-                          <p className="text-xs text-muted-foreground">Total Profit</p>
-                          <p className="font-mono text-xl font-bold text-success">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">UNREALIZED SESSION PROFIT</p>
+                          <p className="font-mono text-3xl font-bold text-success glow-text">
                             +${agentState.totalProfit.toFixed(4)}
                           </p>
                         </div>
                       </div>
                       
                       {/* Agent Stats Grid */}
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="p-2 rounded bg-muted/50">
-                          <p className="text-muted-foreground">Trades</p>
-                          <p className="font-mono font-bold text-foreground">{agentState.tradesExecuted}</p>
+                      <div className="grid grid-cols-2 gap-3 text-xs relative z-10">
+                        <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                          <p className="text-muted-foreground mb-1 font-bold">TRADES</p>
+                          <p className="font-mono font-bold text-white text-lg">{agentState.tradesExecuted}</p>
                         </div>
-                        <div className="p-2 rounded bg-muted/50">
-                          <p className="text-muted-foreground">Skipped</p>
-                          <p className="font-mono font-bold text-foreground">{agentState.tradesSkipped}</p>
-                        </div>
-                        <div className="p-2 rounded bg-muted/50">
-                          <p className="text-muted-foreground">Gas Fees</p>
-                          <p className="font-mono font-bold text-warning">${agentState.totalGasFees.toFixed(4)}</p>
-                        </div>
-                        <div className="p-2 rounded bg-muted/50">
-                          <p className="text-muted-foreground">Slippage</p>
-                          <p className="font-mono font-bold text-warning">${agentState.totalSlippage.toFixed(4)}</p>
+                        <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                          <p className="text-muted-foreground mb-1 font-bold">GAS EST.</p>
+                          <p className="font-mono font-bold text-warning text-lg">${agentState.totalGasFees.toFixed(3)}</p>
                         </div>
                       </div>
                       
-                      {/* Total Costs */}
-                      <div className="mt-2 p-2 rounded bg-muted/50 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Total Costs:</span>
-                          <span className="font-mono font-bold text-destructive">${agentState.totalCosts.toFixed(4)}</span>
-                        </div>
-                      </div>
+                      <p className="text-center text-[10px] text-muted-foreground mt-6 font-mono opacity-60">ACTIVE SINCE: {runningDuration}</p>
                     </div>
                   )}
                 </div>
@@ -591,17 +597,16 @@ const Agents = () => {
               <PriceChart />
               
               {/* Live Agent Logs - Terminal Style */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-display tracking-wide font-bold text-foreground flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-primary" />
-                    LIVE AGENT LOGS
+              <div className="rounded-3xl border border-primary bg-black/40 backdrop-blur-xl p-8 shadow-[0_0_20px_rgba(255,138,0,0.15)]">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-hero text-xl font-bold tracking-tight text-white flex items-center gap-3">
+                    <Activity className="h-5 w-5 text-primary" />
+                    NEURAL TELEMETRY
                   </h3>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" className="text-xs" onClick={clearLogs}>
-                      Clear
+                  <div className="flex gap-4">
+                    <Button variant="ghost" size="sm" className="text-[10px] font-bold tracking-widest text-muted-foreground hover:text-primary uppercase" onClick={clearLogs}>
+                      PURGE BUFFER
                     </Button>
-                    {/* <Button variant="ghost" size="sm" className="text-xs">Export</Button> */}
                   </div>
                 </div>
                 

@@ -6,28 +6,39 @@ import {
   Shield, Vault, Activity, ExternalLink, RefreshCw
 } from "lucide-react";
 import Header from "@/components/Header";
+import Navbar from "@/components/Navbar";
+import ShapeGrid from "@/components/ShapeGrid";
 import StatsCard from "@/components/StatsCard";
 import CryptoLogo from "@/components/CryptoLogo";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
 import UpdateNotification from "@/components/UpdateNotification";
 import { Button } from "@/components/ui/button";
-import { useAlgorandWallet as useWallet } from '@/contexts/AlgorandWalletContext';
+import { useAlgorandWallet } from '@/contexts/AlgorandWalletContext';
 import { useVault } from "@/hooks/useVault";
 import { useMarketData } from "@/hooks/useMarketData";
 import { apiService } from "@/services/ApiService";
 import useArbiGent from "@/hooks/useArbiGent";
 
-// Low-brightness animated background component (matches Vault.tsx style)
-const AnimatedBackground = () => (
-  <div className="fixed inset-0 pointer-events-none">
-    <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/[0.07] rounded-full blur-3xl animate-pulse" />
-    <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/[0.07] rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-primary/[0.03] to-orange-500/[0.03] rounded-full blur-3xl" />
+// Global Background matching the rest of the page
+const GlobalBackground = () => (
+  <div className="fixed inset-0 z-0 opacity-40 pointer-events-none">
+    <ShapeGrid 
+      speed={0}
+      squareSize={77}
+      direction="diagonal"
+      borderColor="#271E37"
+      hoverFillColor="#222222"
+      shape="square"
+      hoverTrailAmount={0}
+    />
+    {/* Purple glow orbs */}
+    <div className="absolute top-1/4 right-1/3 w-[500px] h-[500px] rounded-full bg-primary/8 blur-[120px] pointer-events-none" />
+    <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] rounded-full bg-primary/5 blur-[100px] pointer-events-none" />
   </div>
 );
 
 const Dashboard = () => {
-  const { connected, account } = useWallet();
+  const { connected, account } = useAlgorandWallet();
   const { vault, isLoading: vaultLoading } = useVault();
   const { tokenPrices, opportunities, isLoading: marketLoading, refreshOpportunities } = useMarketData();
 
@@ -253,15 +264,15 @@ const Dashboard = () => {
 
   if (!connected) {
     return (
-      <div className="min-h-screen bg-background dark relative overflow-hidden">
-        <AnimatedBackground />
-        <Header />
-        <main className="pt-24 pb-16 relative z-10">
+      <div className="min-h-screen bg-background dark text-foreground relative overflow-hidden">
+        <GlobalBackground />
+        <Navbar />
+        <main className="pt-32 pb-16 relative z-10 flex flex-col items-center justify-center min-h-[80vh]">
           <div className="container mx-auto px-4 lg:px-8 text-center">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="font-display text-4xl lg:text-5xl font-bold tracking-wide text-foreground mb-4"
+              className="font-hero text-4xl lg:text-6xl font-bold tracking-tight text-foreground mb-6"
             >
               DASHBOARD
             </motion.h1>
@@ -269,10 +280,17 @@ const Dashboard = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="text-muted-foreground mb-8"
+              className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto"
             >
-              Please connect your wallet to access the dashboard.
+              Connectivity required. Please link your secure Algorand wallet to access the ArbiGent autonomous trading command center.
             </motion.p>
+            <Button 
+              variant="hero" 
+              size="lg"
+              onClick={() => document.querySelector<HTMLButtonElement>('nav button[variant="hero"]')?.click()}
+            >
+              Connect Wallet <ArrowRight className="ml-2 w-4 h-4" />
+            </Button>
           </div>
         </main>
       </div>
@@ -286,9 +304,9 @@ const Dashboard = () => {
 
 
   return (
-    <div className="min-h-screen bg-background dark relative overflow-hidden">
-      <AnimatedBackground />
-      <Header />
+    <div className="min-h-screen bg-background dark text-foreground relative overflow-hidden selection:bg-primary/30">
+      <GlobalBackground />
+      <Navbar />
 
       {/* Update Notification */}
       <UpdateNotification
@@ -298,8 +316,8 @@ const Dashboard = () => {
         onHide={() => setShowUpdateNotification(false)}
       />
 
-      <main className="pt-24 pb-16 relative z-10">
-        <div className="container mx-auto px-4 lg:px-8">
+      <main className="pt-32 pb-16 relative z-10">
+        <div className="container mx-auto px-6 lg:px-12 max-w-7xl">
           {/* Page Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -308,11 +326,11 @@ const Dashboard = () => {
             className="mb-8 flex items-center justify-between"
           >
             <div>
-              <h1 className="font-display text-4xl lg:text-5xl font-bold tracking-wide text-foreground mb-2">
-                DASHBOARD
+              <h1 className="font-hero text-4xl lg:text-5xl font-bold tracking-tight text-white mb-2">
+                DASHBOARD <span className="text-primary glow-text">CENTER</span>
               </h1>
-              <p className="text-muted-foreground">
-                Manage your autonomous trading agents.
+              <p className="text-muted-foreground text-lg">
+                Command center for your autonomous arbitrage fleet.
               </p>
             </div>
             <Button
@@ -388,44 +406,44 @@ const Dashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="mb-8"
+            className="mb-12"
           >
-            <div className="rounded-xl border border-border bg-card p-6">
-              <h2 className="font-display text-xl font-bold tracking-wide text-foreground mb-6 flex items-center gap-2">
-                <Wallet className="h-5 w-5 text-primary" />
-                TOKEN BALANCES
+            <div className="rounded-3xl border border-primary bg-black/40 backdrop-blur-xl p-8 shadow-[0_0_20px_rgba(255,138,0,0.15)]">
+              <h2 className="font-hero text-2xl font-bold tracking-tight text-white mb-8 flex items-center gap-3">
+                <Wallet className="h-6 w-6 text-primary" />
+                VAULT ASSETS
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {tokenBalances.map((balance) => (
                   <div 
                     key={balance.token}
-                    className="p-5 rounded-lg bg-muted/30 border border-border hover:border-primary/50 transition-all duration-300"
+                    className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-primary/50 transition-all duration-500 hover:shadow-[0_0_20px_rgba(255,138,0,0.2)] group"
                   >
-                    <div className="flex items-center gap-3 mb-4">
+                    <div className="flex items-center gap-4 mb-6">
                       <CryptoLogo symbol={balance.token} size="md" />
                       <div>
-                        <h3 className="font-mono text-lg font-bold text-foreground">{balance.token}</h3>
-                        <p className="text-xs text-muted-foreground">Vault</p>
+                        <h3 className="font-hero text-xl font-bold text-white tracking-tight">{balance.token}</h3>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Vault Allocation</p>
                       </div>
                     </div>
                     
                     {/* Vault Balance */}
-                    <div className="mb-4 pb-4 border-b border-border/50">
-                      <div className="flex items-baseline justify-between mb-1">
-                        <span className="font-mono text-2xl font-bold text-primary">{balance.vaultBalance}</span>
-                        <span className="text-xs text-muted-foreground">$0.00</span>
+                    <div className="mb-6 pb-6 border-b border-white/5">
+                      <div className="flex items-baseline justify-between mb-2">
+                        <span className="font-mono text-3xl font-bold text-primary group-hover:glow-text transition-all">{balance.vaultBalance}</span>
+                        <span className="text-xs text-muted-foreground font-mono">EST. VALUE</span>
                       </div>
-                      <p className="text-sm text-muted-foreground">${balance.vaultUsd}</p>
+                      <p className="text-base text-muted-foreground font-medium">${balance.vaultUsd}</p>
                     </div>
                     
                     {/* Wallet Balance */}
                     <div>
-                      <p className="text-xs text-muted-foreground mb-2">Wallet Balance</p>
+                      <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wider font-semibold">Wallet Liquid</p>
                       <div className="flex items-baseline justify-between">
-                        <span className="font-mono text-lg font-semibold text-foreground">{balance.walletBalance}</span>
+                        <span className="font-mono text-xl font-bold text-white">{balance.walletBalance}</span>
+                        <span className="text-xs text-muted-foreground font-medium">${balance.walletUsd}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">${balance.walletUsd}</p>
                     </div>
                   </div>
                 ))}
@@ -466,13 +484,16 @@ const Dashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="mb-6"
+            className="mb-12"
           >
-            <div className="rounded-xl border border-border bg-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-display text-xl font-bold tracking-wide text-foreground flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-primary" />
-                  ACTIVE AGENTS
+            <div className="rounded-3xl border border-primary bg-black/40 backdrop-blur-xl p-8 shadow-[0_0_20px_rgba(255,138,0,0.15)] relative overflow-hidden">
+               {/* Decorative background for active agents */}
+               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] -mr-32 -mt-32" />
+
+              <div className="flex items-center justify-between mb-8 relative z-10">
+                <h2 className="font-hero text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+                  <Activity className="h-6 w-6 text-primary" />
+                  OPERATIONAL FLEET
                 </h2>
                 <div className="flex items-center gap-2">
                   {isRunning && (
@@ -481,70 +502,67 @@ const Dashboard = () => {
                       <span className="text-xs font-mono text-success">RUNNING</span>
                     </div>
                   )}
-                  {/* <span className="text-sm text-muted-foreground">
-                    {isRunning ? '1 Active' : '0 Active'}
-                  </span> */}
-                  {isRunning ?null: (
-  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 text-white">
-    <div className="flex gap-3">
-      <Button variant="outline" size="default" asChild>
-        <Link to="/vault">
-          <Vault className="h-4 w-4" />
-          Go to Vault
-        </Link>
-      </Button>
-      <Button variant="default" size="default" asChild>
-        <Link to="/agents">
-          + Launch New Agent
-        </Link>
-      </Button>
-    </div>
-  </div>
-) }
+                  {isRunning ? null : (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-white">
+                      <div className="flex gap-3">
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to="/vault">
+                            <Vault className="h-4 w-4 mr-2" />
+                            Vault
+                          </Link>
+                        </Button>
+                        <Button variant="default" size="sm" asChild>
+                          <Link to="/agents">
+                            + Launch New Agent
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {isRunning ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-10">
                   {/* Agent Status Card */}
-                  <div className="rounded-lg border border-border bg-background/50 p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
                         <div className="w-3 h-3 rounded-full bg-success animate-pulse" />
-                        <span className="font-display font-bold text-foreground">ArbiGent #1</span>
+                        <span className="font-hero font-bold text-white text-lg">ArbiGent #1</span>
                       </div>
-                      <span className="text-xs text-muted-foreground">Running: {runningDuration}</span>
+                      <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full border border-white/10">ACTIVE: {runningDuration}</span>
                     </div>
 
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Strategy:</span>
-                        <span className="font-mono text-foreground">{agentConfig.selectedPair}</span>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between border-b border-white/5 pb-2">
+                        <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-bold">Strategy</span>
+                        <span className="font-mono text-white">{agentConfig.selectedPair}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-white/5 pb-2">
+                        <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-bold">Risk Level</span>
+                        <span className="font-mono text-white">{agentConfig.riskTolerance}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Risk Level:</span>
-                        <span className="font-mono text-foreground">{agentConfig.riskTolerance}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Min Profit:</span>
-                        <span className="font-mono text-foreground">{agentConfig.minProfitThreshold.toFixed(4)}%</span>
+                        <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-bold">Threshold</span>
+                        <span className="font-mono text-white">{agentConfig.minProfitThreshold.toFixed(4)}%</span>
                       </div>
                     </div>
 
                     {/* Performance Metrics */}
-                    <div className="mt-4 pt-3 border-t border-border">
-                      <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="mt-6 pt-6 border-t border-white/10">
+                      <div className="grid grid-cols-3 gap-4 text-center">
                         <div>
-                          <p className="text-xs text-muted-foreground">Session Arbitrage</p>
-                          <p className="font-mono font-bold text-success">+${agentState.totalProfit.toFixed(2)}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-1">Profit</p>
+                          <p className="font-mono font-bold text-success text-base">+${agentState.totalProfit.toFixed(2)}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Trades</p>
-                          <p className="font-mono font-bold text-foreground">{agentState.tradesExecuted}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-1">Trades</p>
+                          <p className="font-mono font-bold text-white text-base">{agentState.tradesExecuted}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Success</p>
-                          <p className="font-mono font-bold text-primary">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-1">Success</p>
+                          <p className="font-mono font-bold text-primary text-base">
                             {agentState.tradesExecuted > 0
                               ? ((agentState.tradesExecuted / (agentState.tradesExecuted + agentState.tradesSkipped)) * 100).toFixed(0)
                               : 0}%
@@ -555,36 +573,49 @@ const Dashboard = () => {
                   </div>
 
                   {/* Recent Activity */}
-                  <div className="rounded-lg border border-border bg-background/50 p-4">
-                    <h3 className="font-display font-bold text-foreground mb-3">Recent Activity</h3>
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {logs.slice(-4).reverse().map((log, index) => (
-                        <div key={index} className="flex items-start gap-2 text-xs">
-                          <span className="text-muted-foreground whitespace-nowrap">[{log.time}]</span>
-                          <span className={`font-mono ${log.type === 'SUCCESS' ? 'text-success' :
-                              log.type === 'ERROR' ? 'text-destructive' :
-                                log.type === 'WARNING' ? 'text-warning' :
-                                  log.type === 'SCAN' ? 'text-primary' :
-                                    'text-muted-foreground'
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+                    <h3 className="font-hero font-bold text-white mb-4 flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-primary" />
+                      LIVE FEED
+                    </h3>
+                    <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                      {logs.slice(-5).reverse().map((log, index) => (
+                        <div key={index} className="flex items-start gap-3 text-xs border-b border-white/5 pb-2 last:border-0">
+                          <span className="text-muted-foreground font-mono whitespace-nowrap opacity-60">[{log.time}]</span>
+                          <span className={`font-bold px-1.5 py-0.5 rounded text-[10px] ${log.type === 'SUCCESS' ? 'bg-success/20 text-success' :
+                              log.type === 'ERROR' ? 'bg-destructive/20 text-destructive' :
+                                log.type === 'WARNING' ? 'bg-warning/20 text-warning' :
+                                  log.type === 'SCAN' ? 'bg-primary/20 text-primary' :
+                                    'bg-white/5 text-muted-foreground'
                             }`}>
                             {log.type}
                           </span>
-                          <span className="text-foreground truncate">{log.message}</span>
+                          <span className="text-white/80 font-medium leading-relaxed">{log.message}</span>
                         </div>
                       ))}
                       {logs.length === 0 && (
-                        <p className="text-xs text-muted-foreground text-center py-2">No activity yet</p>
+                        <div className="flex flex-col items-center justify-center py-8 opacity-40">
+                          <Activity className="h-8 w-8 mb-2 animate-pulse" />
+                          <p className="text-xs">Awaiting live data...</p>
+                        </div>
                       )}
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted/50 mx-auto mb-4">
-                    <Shield className="h-8 w-8 text-muted-foreground" />
+                <div className="text-center py-12 relative z-10">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/5 border border-white/10 mx-auto mb-6 shadow-xl relative group">
+                    <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl group-hover:bg-primary/40 transition-all" />
+                    <Shield className="h-10 w-10 text-muted-foreground relative z-10" />
                   </div>
-                  <p className="text-muted-foreground mb-2">No active agents</p>
-                  <p className="text-xs text-muted-foreground">Start an agent to begin autonomous trading</p>
+                  <p className="text-white text-xl font-hero font-bold mb-2">NO ACTIVE AGENTS</p>
+                  <p className="text-muted-foreground text-sm max-w-xs mx-auto mb-8 leading-relaxed">The fleet is currently docked. Deploy your first autonomous trading agent to start capturing arbitrage opportunities across the network.</p>
+                  <Button variant="hero" size="lg" asChild className="shadow-[0_0_20px_rgba(255,138,0,0.3)]">
+                    <Link to="/agents">
+                      Initialize ArbiGent Agent 
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
                 </div>
               )}
             </div>

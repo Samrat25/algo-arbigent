@@ -3,6 +3,10 @@ import ShapeGrid from "@/components/ShapeGrid";
 import { Check, X, Shield, Zap, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { useState } from "react";
+import { useAlgorandWallet } from "@/contexts/AlgorandWalletContext";
+import { WalletModal } from "@/components/WalletModal";
+import { useNavigate } from "react-router-dom";
 
 const pricingTiers = [
   {
@@ -62,6 +66,22 @@ const pricingTiers = [
 ];
 
 const Pricing = () => {
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const { connected } = useAlgorandWallet();
+  const navigate = useNavigate();
+
+  const handleTierClick = (tier: string) => {
+    if (tier === "Enterprise") {
+      window.open("mailto:sales@arbigent.io", "_blank");
+      return;
+    }
+
+    if (connected) {
+      navigate('/dashboard');
+    } else {
+      setIsWalletModalOpen(true);
+    }
+  };
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/30 relative dark flex flex-col">
       <Navbar />
@@ -142,6 +162,7 @@ const Pricing = () => {
               <Button 
                 variant={tier.isPopular ? "hero" : "heroOutline"} 
                 className="w-full py-6 text-base"
+                onClick={() => handleTierClick(tier.name)}
               >
                 {tier.buttonText}
               </Button>
@@ -149,6 +170,11 @@ const Pricing = () => {
           ))}
         </div>
       </div>
+      
+      <WalletModal 
+        open={isWalletModalOpen} 
+        onOpenChange={setIsWalletModalOpen}
+      />
     </div>
   );
 };

@@ -20,6 +20,8 @@ interface StatsCardProps {
   isUpdating?: boolean;
 }
 
+import { useRef, useState } from "react";
+
 const StatsCard = ({ 
   icon: Icon, 
   label, 
@@ -33,13 +35,36 @@ const StatsCard = ({
   showChangeIndicator = false,
   isUpdating = false
 }: StatsCardProps) => {
+  const divRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [opacity, setOpacity] = useState(0);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!divRef.current) return;
+    const div = divRef.current;
+    const rect = div.getBoundingClientRect();
+    setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
   return (
     <motion.div
+      ref={divRef}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay }}
-      className="rounded-xl border border-border bg-card p-5 hover:border-primary/30 transition-colors relative overflow-hidden"
+      whileHover={{ y: -5, scale: 1.02 }}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setOpacity(1)}
+      onMouseLeave={() => setOpacity(0)}
+      className="rounded-xl border border-primary bg-black/60 backdrop-blur-xl p-5 shadow-[0_0_15px_rgba(255,138,0,0.2)] hover:shadow-[0_0_25px_rgba(255,138,0,0.5)] transition-all duration-500 relative overflow-hidden group"
     >
+      <div
+        className="pointer-events-none absolute -inset-px opacity-0 transition duration-300"
+        style={{
+          opacity,
+          background: `radial-gradient(400px circle at ${position.x}px ${position.y}px, rgba(255,138,0,0.1), transparent 40%)`,
+        }}
+      />
       {/* Loading shimmer effect */}
       {isLoading && (
         <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
