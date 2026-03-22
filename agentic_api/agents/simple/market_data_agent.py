@@ -1,4 +1,4 @@
-"""Market Data Agent - Fetches live APT, USDC, USDT prices and gas fees"""
+"""Market Data Agent - Fetches live ALGO, USDC, USDT prices and gas fees"""
 from agents.simple.base import BaseAgent
 from typing import Dict, Any, Optional
 from datetime import datetime
@@ -8,55 +8,52 @@ import time
 
 
 class MarketDataAgent(BaseAgent):
-    """Agent for fetching live Aptos market data (APT, USDC, USDT)"""
+    """Agent for fetching live Algorand market data (ALGO, USDC, USDT)"""
     
     def __init__(self):
         super().__init__("MarketDataAgent")
         
         # Enhanced API endpoints with more free sources
         self.price_apis = {
-            "coingecko": "https://api.coingecko.com/api/v3/simple/price?ids=aptos,usd-coin,tether&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true",
-            "binance": "https://api.binance.com/api/v3/ticker/24hr?symbols=[\"APTUSDT\",\"USDCUSDT\"]",
-            "coinbase": "https://api.coinbase.com/v2/exchange-rates?currency=APT",
-            "cryptocompare": "https://min-api.cryptocompare.com/data/pricemultifull?fsyms=APT,USDC,USDT&tsyms=USD",
-            "coinapi": "https://rest.coinapi.io/v1/exchangerate/APT/USD",  # Free tier: 100 requests/day
-            "fixer": "https://api.fixer.io/latest?base=USD&symbols=APT,USDC,USDT"  # Free tier: 100 requests/month
+            "coingecko": "https://api.coingecko.com/api/v3/simple/price?ids=algorand,usd-coin,tether&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true",
+            "binance": "https://api.binance.com/api/v3/ticker/24hr?symbols=[\"ALGOUSDT\",\"USDCUSDT\"]",
+            "coinbase": "https://api.coinbase.com/v2/exchange-rates?currency=ALGO",
+            "cryptocompare": "https://min-api.cryptocompare.com/data/pricemultifull?fsyms=ALGO,USDC,USDT&tsyms=USD",
+            "coinapi": "https://rest.coinapi.io/v1/exchangerate/ALGO/USD",  # Free tier: 100 requests/day
+            "fixer": "https://api.fixer.io/latest?base=USD&symbols=ALGO,USDC,USDT"  # Free tier: 100 requests/month
         }
         
-        # Aptos network APIs with alternatives
-        self.aptos_apis = {
-            "gas_estimate": "https://fullnode.mainnet.aptoslabs.com/v1/estimate_gas_price",
-            "mainnet_rpc": "https://fullnode.mainnet.aptoslabs.com/v1",
-            "aptos_foundation": "https://api.aptoslabs.com/v1/gas",
-            "nodereal": "https://aptos-mainnet.nodereal.io/v1/gas_estimate",  # Alternative RPC
-            "ankr": "https://rpc.ankr.com/aptos/v1/estimate_gas_price"  # Free tier
+        # Algorand network APIs with alternatives
+        self.algorand_apis = {
+            "gas_estimate": "https://mainnet-api.algonode.cloud/v2/transactions/params",
+            "mainnet_rpc": "https://mainnet-api.algonode.cloud",
+            "algonode": "https://mainnet-api.algonode.cloud/v2/transactions/params"
         }
         
         # Enhanced DeFi data APIs
         self.defi_apis = {
-            "defillama_aptos": "https://api.llama.fi/protocol/aptos",
-            "aptos_tvl": "https://api.llama.fi/chains/Aptos",
-            "dexscreener": "https://api.dexscreener.com/latest/dex/search/?q=APT",
-            "coingecko_defi": "https://api.coingecko.com/api/v3/coins/aptos/contract/0x1::aptos_coin::AptosCoin",
-            "coinmarketcap": "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=APT",  # Free tier
-            "messari": "https://data.messari.io/api/v1/assets/aptos/metrics",  # Free tier
-            "aptos_scan": "https://api.aptoscan.com/v1/analytics/overview"
+            "defillama_algorand": "https://api.llama.fi/protocol/algorand",
+            "algorand_tvl": "https://api.llama.fi/chains/Algorand",
+            "dexscreener": "https://api.dexscreener.com/latest/dex/search/?q=ALGO",
+            "coingecko_defi": "https://api.coingecko.com/api/v3/coins/algorand",
+            "coinmarketcap": "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=ALGO",  # Free tier
+            "messari": "https://data.messari.io/api/v1/assets/algorand/metrics"  # Free tier
         }
         
-        # Fallback data for Aptos tokens (without total_liquidity)
+        # Fallback data for Algorand tokens (without total_liquidity)
         self.fallback_data = {
-            "apt": {
-                "current_price": "12.45",
+            "algo": {
+                "current_price": "0.30",
                 "gas_fees": "0.001",
-                "tvl_usd": "850,000,000",
-                "market_cap": "$5,200,000,000",
-                "fully_diluted_valuation": "$5,200,000,000",
-                "volume_24h": "$180,000,000"
+                "tvl_usd": "250,000,000",
+                "market_cap": "$2,500,000,000",
+                "fully_diluted_valuation": "$3,000,000,000",
+                "volume_24h": "$100,000,000"
             },
             "usdc": {
                 "current_price": "1.00",
                 "gas_fees": "0.001",
-                "tvl_usd": "850,000,000",
+                "tvl_usd": "250,000,000",
                 "market_cap": "$25,000,000,000",
                 "fully_diluted_valuation": "$25,000,000,000",
                 "volume_24h": "$2,800,000,000"
@@ -64,7 +61,7 @@ class MarketDataAgent(BaseAgent):
             "usdt": {
                 "current_price": "0.999",
                 "gas_fees": "0.001",
-                "tvl_usd": "850,000,000",
+                "tvl_usd": "250,000,000",
                 "market_cap": "$95,000,000,000",
                 "fully_diluted_valuation": "$95,000,000,000",
                 "volume_24h": "$15,000,000,000"
@@ -72,7 +69,7 @@ class MarketDataAgent(BaseAgent):
         }
     
     async def execute(self, input_data: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Fetch live market data for APT, USDC, USDT with 5s timeout fallback"""
+        """Fetch live market data for ALGO, USDC, USDT with 5s timeout fallback"""
         start_time = time.time()
         
         try:
@@ -150,7 +147,7 @@ class MarketDataAgent(BaseAgent):
                 return self._get_fallback_response()
     
     async def _fetch_token_prices(self) -> Dict[str, Any]:
-        """Fetch APT, USDC, USDT prices from CoinGecko - raise exceptions for timeout handling"""
+        """Fetch ALGO, USDC, USDT prices from CoinGecko - raise exceptions for timeout handling"""
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
@@ -161,11 +158,11 @@ class MarketDataAgent(BaseAgent):
                         data = await response.json()
                         
                         result = {
-                            "apt": {
-                                "price": data.get("aptos", {}).get("usd", 12.45),
-                                "market_cap": data.get("aptos", {}).get("usd_market_cap", 5_200_000_000),
-                                "volume_24h": data.get("aptos", {}).get("usd_24h_vol", 180_000_000),
-                                "change_24h": data.get("aptos", {}).get("usd_24h_change", 0.0)
+                            "algo": {
+                                "price": data.get("algorand", {}).get("usd", 0.3),
+                                "market_cap": data.get("algorand", {}).get("usd_market_cap", 2_500_000_000),
+                                "volume_24h": data.get("algorand", {}).get("usd_24h_vol", 100_000_000),
+                                "change_24h": data.get("algorand", {}).get("usd_24h_change", 0.0)
                             },
                             "usdc": {
                                 "price": data.get("usd-coin", {}).get("usd", 1.0),
@@ -181,7 +178,7 @@ class MarketDataAgent(BaseAgent):
                             },
                             "source": "coingecko_live"
                         }
-                        print(f"✅ CoinGecko prices: APT=${result['apt']['price']}, USDC=${result['usdc']['price']}, USDT=${result['usdt']['price']}")
+                        print(f"✅ CoinGecko prices: ALGO=${result['algo']['price']}, USDC=${result['usdc']['price']}, USDT=${result['usdt']['price']}")
                         return result
                     else:
                         print(f"⚠️ CoinGecko returned status {response.status}")
@@ -203,29 +200,29 @@ class MarketDataAgent(BaseAgent):
         """Fetch prices from Binance as backup"""
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                "https://api.binance.com/api/v3/ticker/price?symbols=[\"APTUSDT\",\"USDCUSDT\"]",
+                self.price_apis["binance"],
                 timeout=aiohttp.ClientTimeout(total=3)
             ) as response:
                 if response.status == 200:
                     data = await response.json()
                     
-                    apt_price = 12.45
+                    algo_price = 0.30
                     usdc_price = 1.0
                     
                     for item in data:
                         symbol = item.get("symbol", "")
                         price = float(item.get("price", 0))
                         
-                        if symbol == "APTUSDT":
-                            apt_price = price
+                        if symbol == "ALGOUSDT":
+                            algo_price = price
                         elif symbol == "USDCUSDT":
                             usdc_price = price
                     
                     result = {
-                        "apt": {
-                            "price": apt_price,
-                            "market_cap": 5_200_000_000,  # Estimate
-                            "volume_24h": 180_000_000,    # Estimate
+                        "algo": {
+                            "price": algo_price,
+                            "market_cap": 2_500_000_000,  # Estimate
+                            "volume_24h": 100_000_000,    # Estimate
                             "change_24h": 0.0
                         },
                         "usdc": {
@@ -242,61 +239,55 @@ class MarketDataAgent(BaseAgent):
                         },
                         "source": "binance_live"
                     }
-                    print(f"✅ Binance backup prices: APT=${apt_price}, USDC=${usdc_price}")
+                    print(f"✅ Binance backup prices: ALGO=${algo_price}, USDC=${usdc_price}")
                     return result
                 else:
                     raise Exception(f"Binance API returned status {response.status}")
     
     async def _fetch_gas_fees(self) -> Dict[str, Any]:
-        """Fetch Aptos gas fees - raise exceptions for timeout handling"""
+        """Fetch Algorand gas fees - raise exceptions for timeout handling"""
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    self.aptos_apis["gas_estimate"],
+                    self.algorand_apis["gas_estimate"],
                     timeout=aiohttp.ClientTimeout(total=3)
                 ) as response:
                     if response.status == 200:
                         data = await response.json()
                         
-                        # Parse the actual Aptos gas response format
-                        gas_unit_price = data.get("gas_estimate", 100)
-                        prioritized_gas = data.get("prioritized_gas_estimate", 150)
-                        deprioritized_gas = data.get("deprioritized_gas_estimate", 100)
+                        # Parse Algorand gas response format
+                        gas_unit_price = data.get("fee", 1000)  # default min fee is 1000 microAlgos
                         
-                        # Use standard gas estimate
-                        typical_gas_units = 1000
-                        cost_octas = gas_unit_price * typical_gas_units
-                        cost_apt = cost_octas / 100_000_000
+                        # Use standard gas estimate for a swap (a swap is typically a group of txns, let's say 4 txns)
+                        typical_txns = 4
+                        cost_microalgos = gas_unit_price * typical_txns
+                        cost_algo = cost_microalgos / 1_000_000
                         
                         result = {
-                            "gas_fees": str(round(cost_apt, 6)),
+                            "gas_fees": str(round(cost_algo, 6)),
                             "gas_unit_price": gas_unit_price,
-                            "prioritized_gas": prioritized_gas,
-                            "deprioritized_gas": deprioritized_gas,
-                            "source": "aptos_rpc_live"
+                            "source": "algorand_rpc_live"
                         }
-                        print(f"✅ Aptos gas LIVE: {cost_apt:.6f} APT ({gas_unit_price} octas/unit, prioritized: {prioritized_gas})")
+                        print(f"✅ Algorand gas LIVE: {cost_algo:.6f} ALGO ({gas_unit_price} microalgos/unit)")
                         return result
                     else:
-                        print(f"⚠️ Aptos RPC returned status {response.status}")
-                        raise Exception(f"Aptos RPC returned status {response.status}")
+                        print(f"⚠️ Algorand RPC returned status {response.status}")
+                        raise Exception(f"Algorand RPC returned status {response.status}")
                         
         except asyncio.TimeoutError:
-            print("⚠️ Aptos gas request timed out")
+            print("⚠️ Algorand gas request timed out")
             raise
         except Exception as e:
-            print(f"❌ Aptos gas fetch failed: {e}")
+            print(f"❌ Algorand gas fetch failed: {e}")
             # Don't return fallback immediately, let the timeout handler decide
             raise
     
     async def _fetch_defi_data(self) -> Dict[str, Any]:
-        """Fetch Aptos DeFi TVL data with multiple sources"""
-        # Try multiple sources in order of preference
+        """Fetch Algorand DeFi TVL data with multiple sources"""
         sources_to_try = [
             ("dexscreener", self._fetch_dexscreener_data),
-            ("coingecko_defi", self._fetch_coingecko_defi),
             ("defillama", self._fetch_defillama_data),
-            ("aptos_scan", self._fetch_aptos_scan_data)
+            ("coingecko_defi", self._fetch_coingecko_defi)
         ]
         
         for source_name, fetch_func in sources_to_try:
@@ -309,7 +300,7 @@ class MarketDataAgent(BaseAgent):
                 continue
         
         # All sources failed, return fallback
-        return {"tvl_usd": "850,000,000", "total_liquidity": "150000000", "source": "fallback"}
+        return {"tvl_usd": "250,000,000", "total_liquidity": "50,000,000", "source": "fallback"}
     
     async def _fetch_dexscreener_data(self) -> Dict[str, Any]:
         """Fetch data from DexScreener (free, no API key needed)"""
@@ -326,15 +317,15 @@ class MarketDataAgent(BaseAgent):
                     total_liquidity = 0
                     
                     for pair in pairs:
-                        if pair.get("chainId") == "aptos":
+                        if pair.get("chainId") == "algorand":
                             liquidity = pair.get("liquidity", {}).get("usd", 0)
                             if liquidity:
                                 total_liquidity += float(liquidity)
                     
                     result = {
-                        "tvl_usd": f"{int(total_liquidity * 5):,}",  # Estimate total TVL as 5x DEX liquidity
+                        "tvl_usd": f"{int(total_liquidity * 5):,}",  # Estimate total TVL
                         "total_liquidity": f"{int(total_liquidity):,}",
-                        "dex_pairs_found": len([p for p in pairs if p.get("chainId") == "aptos"]),
+                        "dex_pairs_found": len([p for p in pairs if p.get("chainId") == "algorand"]),
                         "source": "dexscreener_live"
                     }
                     print(f"✅ DexScreener TVL: ${int(total_liquidity):,} liquidity, {result['dex_pairs_found']} pairs")
@@ -352,13 +343,11 @@ class MarketDataAgent(BaseAgent):
                 if response.status == 200:
                     data = await response.json()
                     
-                    # Parse CoinGecko DeFi response
                     market_data = data.get("market_data", {})
-                    total_supply = market_data.get("total_supply", 1_000_000_000)
-                    circulating_supply = market_data.get("circulating_supply", 400_000_000)
+                    circulating_supply = market_data.get("circulating_supply", 8_000_000_000)
                     
                     # Estimate TVL based on circulating supply and price
-                    estimated_tvl = circulating_supply * 0.2 * 12.45  # 20% of supply locked, $12.45 price
+                    estimated_tvl = circulating_supply * 0.1 * 0.3  # 10% locked, $0.3 price
                     
                     result = {
                         "tvl_usd": f"{int(estimated_tvl):,}",
@@ -374,47 +363,23 @@ class MarketDataAgent(BaseAgent):
         """Fetch from DeFiLlama (original method)"""
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                self.defi_apis["aptos_tvl"],
+                self.defi_apis["algorand_tvl"],
                 timeout=aiohttp.ClientTimeout(total=3)
             ) as response:
                 if response.status == 200:
                     data = await response.json()
                     
-                    tvl = data.get("tvl", 850_000_000)
+                    tvl = data.get("tvl", 250_000_000)
                     
                     result = {
                         "tvl_usd": f"{int(tvl):,}",
-                        "total_liquidity": "150000000",
+                        "total_liquidity": "50000000",
                         "source": "defillama_live"
                     }
                     print(f"✅ DeFiLlama TVL: ${int(tvl):,}")
                     return result
                 else:
                     raise Exception(f"DeFiLlama returned status {response.status}")
-    
-    async def _fetch_aptos_scan_data(self) -> Dict[str, Any]:
-        """Fetch from AptosScan (if available)"""
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                self.defi_apis["aptos_scan"],
-                timeout=aiohttp.ClientTimeout(total=3)
-            ) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    
-                    # Parse AptosScan response (structure may vary)
-                    tvl = data.get("total_value_locked", 850_000_000)
-                    liquidity = data.get("total_liquidity", 150_000_000)
-                    
-                    result = {
-                        "tvl_usd": f"{int(tvl):,}",
-                        "total_liquidity": f"{int(liquidity):,}",
-                        "source": "aptos_scan_live"
-                    }
-                    print(f"✅ AptosScan TVL: ${int(tvl):,}")
-                    return result
-                else:
-                    raise Exception(f"AptosScan returned status {response.status}")
     
     def _build_chains_data(self, price_data: Any, gas_data: Any, defi_data: Any) -> list:
         """Build chains data for response with dynamic gas fees and TVL per token"""
@@ -426,7 +391,7 @@ class MarketDataAgent(BaseAgent):
         else:
             # Use fallback prices
             prices = {
-                "apt": {"price": 12.45, "market_cap": 5_200_000_000, "volume_24h": 180_000_000},
+                "algo": {"price": 0.30, "market_cap": 2_500_000_000, "volume_24h": 100_000_000},
                 "usdc": {"price": 1.0, "market_cap": 25_000_000_000, "volume_24h": 2_800_000_000},
                 "usdt": {"price": 0.999, "market_cap": 95_000_000_000, "volume_24h": 15_000_000_000},
                 "source": "fallback"
@@ -434,33 +399,32 @@ class MarketDataAgent(BaseAgent):
         
         # Extract gas unit price from live data
         if isinstance(gas_data, dict):
-            gas_unit_price = gas_data.get("gas_unit_price", 100)
+            gas_unit_price = gas_data.get("gas_unit_price", 1000)
         else:
-            gas_unit_price = 100  # Default fallback
+            gas_unit_price = 1000  # Default fallback
         
-        # Get Aptos ecosystem TVL (this is for APT)
+        # Get Algorand ecosystem TVL (this is for ALGO)
         if isinstance(defi_data, dict):
-            aptos_tvl = defi_data.get("tvl_usd", "850,000,000")
+            algorand_tvl = defi_data.get("tvl_usd", "250,000,000")
         else:
-            aptos_tvl = "850,000,000"
+            algorand_tvl = "250,000,000"
         
-        # TVL per token - USDC and USDT have their own global TVL (not Aptos-specific)
-        # These represent the total value locked across all chains for each stablecoin
-        tvl_by_token = {
-            "apt": aptos_tvl,  # Aptos ecosystem TVL from DeFi data
-            "usdc": "$45,000,000,000",  # USDC global TVL across all chains
-            "usdt": "$95,000,000,000"   # USDT global TVL across all chains
+        # TVL per token - USDC and USDT have their own global TVL (not Algorand-specific)
+        amount_global_tvl = {
+            "algo": algorand_tvl,
+            "usdc": "$45,000,000,000",
+            "usdt": "$95,000,000,000"
         }
         
-        # Gas units vary by operation complexity per token type
-        gas_units_by_token = {
-            "apt": 500,    # Native APT transfer
-            "usdc": 800,   # Token transfer (more complex)
-            "usdt": 800    # Token transfer (more complex)
+        # Gas transactions vary by operation complexity per token type
+        gas_txns_by_token = {
+            "algo": 1,    # Native ALGO transfer
+            "usdc": 1,    # ASA transfer
+            "usdt": 1     # ASA transfer
         }
         
         # Build chain data for each token with DYNAMIC gas fees and proper TVL
-        for token in ["apt", "usdc", "usdt"]:
+        for token in ["algo", "usdc", "usdt"]:
             token_data = prices.get(token, {})
             
             # Get price, handling both live and fallback data
@@ -470,20 +434,20 @@ class MarketDataAgent(BaseAgent):
                 price = float(self.fallback_data[token]["current_price"])
             
             # Calculate dynamic gas fee for this token
-            gas_units = gas_units_by_token.get(token, 500)
-            gas_cost_octas = gas_units * gas_unit_price
-            gas_cost_apt = gas_cost_octas / 100_000_000  # 1 APT = 100,000,000 octas
+            txns = gas_txns_by_token.get(token, 1)
+            gas_cost_microalgos = txns * gas_unit_price
+            gas_cost_algo = gas_cost_microalgos / 1_000_000  # 1 ALGO = 1,000,000 microAlgos
             
             chains.append({
                 "chain": token,
                 "current_price": str(round(price, 4)),
-                "gas_fees": str(round(gas_cost_apt, 6)),
+                "gas_fees": str(round(gas_cost_algo, 6)),
                 "gas_details": {
-                    "gas_unit_price_octas": gas_unit_price,
-                    "gas_units": gas_units,
-                    "gas_cost_apt": round(gas_cost_apt, 6)
+                    "gas_unit_price_microalgos": gas_unit_price,
+                    "gas_txns": txns,
+                    "gas_cost_algo": round(gas_cost_algo, 6)
                 },
-                "tvl_usd": tvl_by_token.get(token, aptos_tvl),
+                "tvl_usd": amount_global_tvl.get(token, algorand_tvl),
                 "market_cap": f"${int(token_data.get('market_cap', 1_000_000_000)):,}",
                 "fully_diluted_valuation": f"${int(token_data.get('market_cap', 1_000_000_000)):,}",
                 "volume_24h": f"${int(token_data.get('volume_24h', 100_000_000)):,}"
@@ -496,34 +460,34 @@ class MarketDataAgent(BaseAgent):
         chains = []
         
         # Default gas unit price for fallback
-        default_gas_unit_price = 100
-        gas_units_by_token = {
-            "apt": 500,
-            "usdc": 800,
-            "usdt": 800
+        default_gas_unit_price = 1000
+        gas_txns_by_token = {
+            "algo": 1,
+            "usdc": 1,
+            "usdt": 1
         }
         
         # TVL per token
         tvl_by_token = {
-            "apt": "850,000,000",
+            "algo": "250,000,000",
             "usdc": "$45,000,000,000",
             "usdt": "$95,000,000,000"
         }
         
-        for token in ["apt", "usdc", "usdt"]:
+        for token in ["algo", "usdc", "usdt"]:
             fallback = self.fallback_data[token]
-            gas_units = gas_units_by_token.get(token, 500)
-            gas_cost_octas = gas_units * default_gas_unit_price
-            gas_cost_apt = gas_cost_octas / 100_000_000
+            txns = gas_txns_by_token.get(token, 1)
+            gas_cost_microalgos = txns * default_gas_unit_price
+            gas_cost_algo = gas_cost_microalgos / 1_000_000
             
             chains.append({
                 "chain": token,
                 "current_price": fallback["current_price"],
-                "gas_fees": str(round(gas_cost_apt, 6)),
+                "gas_fees": str(round(gas_cost_algo, 6)),
                 "gas_details": {
-                    "gas_unit_price_octas": default_gas_unit_price,
-                    "gas_units": gas_units,
-                    "gas_cost_apt": round(gas_cost_apt, 6)
+                    "gas_unit_price_microalgos": default_gas_unit_price,
+                    "gas_txns": txns,
+                    "gas_cost_algo": round(gas_cost_algo, 6)
                 },
                 "tvl_usd": tvl_by_token.get(token, fallback["tvl_usd"]),
                 "market_cap": fallback["market_cap"],

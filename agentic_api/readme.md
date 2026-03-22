@@ -2,7 +2,7 @@
 
 ## 🎯 **System Overview**
 
-The **Agentic Arbitrage Simulator** is an AI-powered DeFi trading simulation api  that leverages intelligent agents to identify, analyze, and optimize arbitrage opportunities across the Aptos ecosystem. Unlike traditional trading bots that follow rigid rules, this system uses **autonomous agents** with reasoning capabilities to make sophisticated trading decisions.
+The **Agentic Arbitrage Simulator** is an AI-powered DeFi trading simulation api that leverages intelligent agents to identify, analyze, and optimize arbitrage opportunities across the Algorand ecosystem. Unlike traditional trading bots that follow rigid rules, this system uses **autonomous agents** with reasoning capabilities to make sophisticated trading decisions.
 
 ## 🧠 **Why Agentic > Traditional Bots**
 
@@ -28,7 +28,7 @@ The **Agentic Arbitrage Simulator** is an AI-powered DeFi trading simulation api
 
 1. **🔍 Market Data Agent**
    - Fetches live prices from multiple sources (CoinGecko, Binance, etc.)
-   - Retrieves real-time gas prices from Aptos RPC
+   - Retrieves real-time gas prices from Algorand RPC
    - Gathers DeFi TVL data from various APIs
    - Provides fallback mechanisms for reliability
 
@@ -59,7 +59,7 @@ The **Agentic Arbitrage Simulator** is an AI-powered DeFi trading simulation api
 GET /market/overview
 ```
 **Features:**
-- Live price feeds for APT, USDC, USDT
+- Live price feeds for ALGO, USDC, USDT
 - Dynamic gas fee calculation per token type
 - Real-time TVL data from multiple DeFi sources
 - Automatic fallback to cached data on timeout
@@ -112,8 +112,8 @@ POST /arbitrage/optimize-investment
 ```json
 {
   "dex_fees": {
-    "uniswap": 0.30,
-    "sushiswap": 0.25,
+    "tinyman": 0.30,
+    "pact": 0.30,
     "Smart Contract": 0.20  // Generic fallback
   }
 }
@@ -123,9 +123,9 @@ POST /arbitrage/optimize-investment
 ```json
 {
   "current_prices": [
-    {"apt": "18.50", "usdc": "1.0", "usdt": "0.999"}
+    {"algo": "0.30", "usdc": "1.0", "usdt": "0.999"}
   ],
-  "apt_price": "18.50"  // Direct override
+  "algo_price": "0.30"  // Direct override
 }
 ```
 
@@ -133,7 +133,7 @@ POST /arbitrage/optimize-investment
 ```json
 {
   "trade_amount": 1000,     // Direct USD amount
-  "amount_apt": 50,         // APT-based investment
+  "amount_algo": 500,       // ALGO-based investment
   "amount_usd": 1000        // USD-based investment
 }
 ```
@@ -143,11 +143,11 @@ POST /arbitrage/optimize-investment
 ## 🧮 **Intelligent Calculations**
 
 ### **Dynamic Gas Pricing**
-- Fetches live gas prices from Aptos RPC
-- Calculates token-specific gas costs:
-  - **APT transfers:** 500 gas units
-  - **USDC/USDT transfers:** 800 gas units
-- Converts to USD using consistent APT pricing
+- Fetches live gas prices from Algorand RPC
+- Calculates token-specific gas costs using microAlgos units:
+  - **ALGO transfers:** Uses standard network minimal fees multiplied by operations
+  - **USDC/USDT transfers:** ASA transfers using accurate operational steps
+- Converts to USD using consistent ALGO pricing
 
 ### **Realistic Slippage Estimation**
 - **Small trades (<$1K):** 0.02% slippage
@@ -173,7 +173,7 @@ POST /arbitrage/optimize-investment
 - Blocks mathematically impossible scenarios
 
 ### **Price Consistency Validation**
-- Ensures same APT price across all calculations
+- Ensures same ALGO price across all calculations
 - Validates gas fee calculations
 - Prevents price manipulation attacks
 
@@ -231,7 +231,7 @@ POST /arbitrage/optimize-investment
 ## 🔮 **Future Enhancements**
 
 ### **Planned Features**
-- **Multi-chain arbitrage** (Ethereum, BSC, Polygon)
+- **Cross-chain arbitrage** connections
 - **MEV protection** strategies
 - **Automated execution** with wallet integration
 - **Historical performance** tracking
@@ -267,7 +267,7 @@ curl -X POST "http://localhost:8000/arbitrage/isprofitable" \
   -H "Content-Type: application/json" \
   -d '{
     "from_token": "usdc",
-    "to_token": "apt",
+    "to_token": "algo",
     "trade_amount": 1000,
     "dex_fees": {"Smart Contract": 0.30}
   }'
@@ -279,7 +279,7 @@ curl -X POST "http://localhost:8000/arbitrage/possibilities" \
   -H "Content-Type: application/json" \
   -d '{
     "trade_amount": 5000,
-    "dex_fees": {"uniswap": 0.30, "sushiswap": 0.25}
+    "dex_fees": {"tinyman": 0.30, "pact": 0.30}
   }'
 ```
 
@@ -288,9 +288,9 @@ curl -X POST "http://localhost:8000/arbitrage/possibilities" \
 curl -X POST "http://localhost:8000/arbitrage/optimize-investment" \
   -H "Content-Type: application/json" \
   -d '{
-    "from_token": "apt",
+    "from_token": "algo",
     "to_token": "usdc",
-    "max_investment_apt": 10000
+    "max_investment_algo": 10000
   }'
 ```
 

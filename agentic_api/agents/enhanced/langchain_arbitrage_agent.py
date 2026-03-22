@@ -90,7 +90,7 @@ class LangChainArbitrageAgent(BaseAgent):
                 prompt = self._create_general_analysis_prompt(input_data, calculation_result)
             
             messages = [
-                SystemMessage(content="You are an expert DeFi arbitrage analyst specializing in Aptos ecosystem. Provide concise, actionable insights."),
+                SystemMessage(content="You are an expert DeFi arbitrage analyst specializing in the Algorand ecosystem. Provide concise, actionable insights."),
                 HumanMessage(content=prompt)
             ]
             
@@ -111,7 +111,7 @@ class LangChainArbitrageAgent(BaseAgent):
         total_costs = charges.get("total_costs", {})
         
         return f"""
-Analyze these arbitrage charges for Aptos trading:
+Analyze these arbitrage charges for Algorand trading:
 
 TRADE DETAILS:
 - Route: {result.get("route", {}).get("from_pair", "N/A")} → {result.get("route", {}).get("to_pair", "N/A")}
@@ -137,7 +137,7 @@ Keep response under 150 words.
         profitability = result.get("profitability", {})
         
         return f"""
-Analyze this Aptos arbitrage opportunity:
+Analyze this Algorand arbitrage opportunity:
 
 OPPORTUNITY:
 - Route: {result.get("route", {}).get("from_pair", "N/A")} → {result.get("route", {}).get("to_pair", "N/A")}
@@ -166,7 +166,7 @@ Keep response under 150 words.
         market_summary = result.get("market_summary", {})
         
         return f"""
-Analyze these Aptos arbitrage opportunities:
+Analyze these Algorand arbitrage opportunities:
 
 SEARCH RESULTS:
 - Total Opportunities Found: {opportunities.get("total_found", 0)}
@@ -189,7 +189,7 @@ Keep response under 200 words.
     def _create_general_analysis_prompt(self, input_data: Dict[str, Any], result: Dict[str, Any]) -> str:
         """Create general analysis prompt"""
         return f"""
-Analyze this Aptos arbitrage analysis result:
+Analyze this Algorand arbitrage analysis result:
 
 INPUT: {json.dumps(input_data, indent=2)[:500]}...
 RESULT: {json.dumps(result, indent=2)[:500]}...
