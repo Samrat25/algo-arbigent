@@ -509,7 +509,7 @@ const Agents = () => {
                 <div className="space-y-3">
                   {!isRunning ? (
                     <Button 
-                      variant="glow" 
+                      variant="hero" 
                       size="lg" 
                       className="w-full font-display tracking-wide font-bold"
                       onClick={handleStartAgent}

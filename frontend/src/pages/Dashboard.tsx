@@ -60,7 +60,7 @@ const Dashboard = () => {
 
   // Token balances state
   const [tokenBalances, setTokenBalances] = useState<Array<{
-    token: string;
+    token: 'ALGO' | 'USDC' | 'USDT';
     vaultBalance: string;
     walletBalance: string;
     vaultUsd: string;
@@ -142,7 +142,7 @@ const Dashboard = () => {
       const walletResponse = await fetch(`http://localhost:3001/api/balance/${account.address}`);
       const walletData = await walletResponse.json();
 
-      const balances = ['ALGO', 'USDC', 'USDT'].map(symbol => {
+      const balances = (['ALGO', 'USDC', 'USDT'] as const).map(symbol => {
         // Get vault balance
         const vaultBalance = vault.balances.find(b => b.coinSymbol.toUpperCase() === symbol);
         const decimals = 6;
@@ -452,7 +452,7 @@ const Dashboard = () => {
                 <p className="text-muted-foreground max-w-md mb-6">
                   Deploy your first autonomous trading agent to start capturing arbitrage opportunities across Aptos DEXs.
                 </p>
-                <Button variant="glow" size="lg" asChild>
+                <Button variant="hero" size="lg" asChild>
                   <Link to="/agents">
                     Launch Your First Agent
                     <ArrowRight className="h-4 w-4" />

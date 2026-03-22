@@ -100,7 +100,7 @@ const Index = () => {
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Button variant="hero" size="xl" onClick={handleConnect}>
+                  <Button variant="hero" size="lg" onClick={handleConnect}>
                     {connected ? 'Launch App' : 'Connect Wallet'}
                     <ArrowRight className="h-5 w-5" />
                   </Button>
@@ -221,7 +221,7 @@ main
               <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
                 Connect your Petra wallet and deploy your first autonomous trading agent in minutes.
               </p>
-              <Button variant="glow" size="xl" onClick={handleConnect} className="font-display tracking-wide font-bold">
+              <Button variant="hero" size="lg" onClick={handleConnect} className="font-display tracking-wide font-bold">
                 {connected ? 'Launch App' : 'Connect Petra Wallet'}
                 <ArrowRight className="h-5 w-5" />
               </Button>
