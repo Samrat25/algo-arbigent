@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useWallet } from '@txnlab/use-wallet-react';
 import algosdk from 'algosdk';
+import { API_CONFIG } from '@/config/walletConfig';
 
 // Token balance interface
 interface TokenBalances {
@@ -277,12 +278,60 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       
       // Send all transactions as a group
       const signedTxnBytes = signedTxns.filter(txn => txn !== null);
-      await algodClient.sendRawTransaction(signedTxnBytes).do();
+      const txResult = await algodClient.sendRawTransaction(signedTxnBytes).do();
+      
+      // Wait for confirmation
+      await algosdk.waitForConfirmation(algodClient, txResult.txId, 4);
+      
+      console.log(`✅ Deposited ${amount} ALGO to vault - TxID: ${txResult.txId}`);
+      
+      // Log transaction to backend
+      try {
+        console.log('Logging deposit to backend:', {
+          walletAddress: account.address,
+          coinSymbol: 'ALGO',
+          amount: amountMicroAlgo.toString(),
+          transactionHash: txResult.txId
+        });
+        
+        const logResponse = await fetch(`${API_CONFIG.backendUrl}/vault/deposit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: account.address,
+            coinSymbol: 'ALGO',
+            amount: amountMicroAlgo.toString(),
+            transactionHash: txResult.txId
+          })
+        });
+        
+        if (!logResponse.ok) {
+          const errorData = await logResponse.json();
+          console.error('Failed to log transaction to backend:', errorData);
+        } else {
+          const logData = await logResponse.json();
+          console.log('✅ Transaction logged to backend:', logData);
+        }
+      } catch (logError) {
+        console.error('Failed to log transaction:', logError);
+      }
 
       await refreshBalances();
       return true;
     } catch (err: any) {
-      setError(err.message || 'Failed to deposit ALGO');
+      // Check for minimum balance error
+      if (err.message && err.message.includes('balance') && err.message.includes('below min')) {
+        const match = err.message.match(/balance (\d+) below min (\d+)/);
+        if (match) {
+          const currentBalance = (parseInt(match[1]) / 1000000).toFixed(2);
+          const minRequired = (parseInt(match[2]) / 1000000).toFixed(2);
+          setError(`Insufficient ALGO balance. You have ${currentBalance} ALGO but need at least ${minRequired} ALGO to maintain minimum balance requirements (account has opted into multiple assets/apps).`);
+        } else {
+          setError('Insufficient ALGO balance. Your account needs more ALGO to cover minimum balance requirements.');
+        }
+      } else {
+        setError(err.message || 'Failed to deposit ALGO');
+      }
       return false;
     } finally {
       setIsProcessing(false);
@@ -341,12 +390,55 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       // Wait for confirmation
       await algosdk.waitForConfirmation(algodClient, txResult.txId, 4);
 
-      console.log(`✅ Deposited ${amount} ${token} to vault`);
+      console.log(`✅ Deposited ${amount} ${token} to vault - TxID: ${txResult.txId}`);
+      
+      // Log transaction to backend
+      try {
+        console.log('Logging deposit to backend:', {
+          walletAddress: account.address,
+          coinSymbol: token,
+          amount: amountMicro.toString(),
+          transactionHash: txResult.txId
+        });
+        
+        const logResponse = await fetch(`${API_CONFIG.backendUrl}/vault/deposit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: account.address,
+            coinSymbol: token,
+            amount: amountMicro.toString(),
+            transactionHash: txResult.txId
+          })
+        });
+        
+        if (!logResponse.ok) {
+          const errorData = await logResponse.json();
+          console.error('Failed to log transaction to backend:', errorData);
+        } else {
+          const logData = await logResponse.json();
+          console.log('✅ Transaction logged to backend:', logData);
+        }
+      } catch (logError) {
+        console.error('Failed to log transaction:', logError);
+      }
 
       await refreshBalances();
       return true;
     } catch (err: any) {
-      setError(err.message || `Failed to deposit ${token}`);
+      // Check for minimum balance error
+      if (err.message && err.message.includes('balance') && err.message.includes('below min')) {
+        const match = err.message.match(/balance (\d+) below min (\d+)/);
+        if (match) {
+          const currentBalance = (parseInt(match[1]) / 1000000).toFixed(2);
+          const minRequired = (parseInt(match[2]) / 1000000).toFixed(2);
+          setError(`Insufficient ALGO balance. You have ${currentBalance} ALGO but need at least ${minRequired} ALGO to maintain minimum balance requirements. Please keep more ALGO in your wallet.`);
+        } else {
+          setError('Insufficient ALGO balance. Your account needs more ALGO to cover minimum balance requirements.');
+        }
+      } else {
+        setError(err.message || `Failed to deposit ${token}`);
+      }
       return false;
     } finally {
       setIsProcessing(false);
@@ -388,13 +480,61 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       const signedTxns = await signTransactions([encodedTxn]);
       
       if (signedTxns[0]) {
-        await algodClient.sendRawTransaction(signedTxns[0]).do();
+        const txResult = await algodClient.sendRawTransaction(signedTxns[0]).do();
+        
+        // Wait for confirmation
+        await algosdk.waitForConfirmation(algodClient, txResult.txId, 4);
+        
+        console.log(`✅ Withdrew ${amount} ${sourceToken} from vault - TxID: ${txResult.txId}`);
+        
+        // Log transaction to backend
+        try {
+          console.log('Logging withdrawal to backend:', {
+            walletAddress: account.address,
+            coinSymbol: sourceToken,
+            amount: amountMicro.toString(),
+            transactionHash: txResult.txId
+          });
+          
+          const logResponse = await fetch(`${API_CONFIG.backendUrl}/vault/withdraw`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              walletAddress: account.address,
+              coinSymbol: sourceToken,
+              amount: amountMicro.toString(),
+              transactionHash: txResult.txId
+            })
+          });
+          
+          if (!logResponse.ok) {
+            const errorData = await logResponse.json();
+            console.error('Failed to log transaction to backend:', errorData);
+          } else {
+            const logData = await logResponse.json();
+            console.log('✅ Transaction logged to backend:', logData);
+          }
+        } catch (logError) {
+          console.error('Failed to log transaction:', logError);
+        }
       }
 
       await refreshBalances();
       return true;
     } catch (err: any) {
-      setError(err.message || `Failed to withdraw ${sourceToken}`);
+      // Check for minimum balance error
+      if (err.message && err.message.includes('balance') && err.message.includes('below min')) {
+        const match = err.message.match(/balance (\d+) below min (\d+)/);
+        if (match) {
+          const currentBalance = (parseInt(match[1]) / 1000000).toFixed(2);
+          const minRequired = (parseInt(match[2]) / 1000000).toFixed(2);
+          setError(`Insufficient ALGO balance. You have ${currentBalance} ALGO but need at least ${minRequired} ALGO to maintain minimum balance requirements. Please keep more ALGO in your wallet.`);
+        } else {
+          setError('Insufficient ALGO balance. Your account needs more ALGO to cover minimum balance requirements.');
+        }
+      } else {
+        setError(err.message || `Failed to withdraw ${sourceToken}`);
+      }
       return false;
     } finally {
       setIsProcessing(false);

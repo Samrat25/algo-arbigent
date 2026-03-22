@@ -63,17 +63,17 @@ const Agents = () => {
   } = useArbiGent();
   
   const pairs = [
-    { value: "USDC_APT", label: "USDC → APT" },
-    { value: "APT_USDT", label: "APT → USDT" },
+    { value: "USDC_ALGO", label: "USDC → ALGO" },
+    { value: "ALGO_USDT", label: "ALGO → USDT" },
     { value: "USDC_USDT", label: "USDC → USDT" },
     { value: "AUTO", label: "AUTO (All Pairs)" },
   ];
   
   const riskLevels: { value: RiskLevel; maxTrade: string; gasLimit: string }[] = [
-    { value: "LOW", maxTrade: "$1,000", gasLimit: "0.003 APT" },
-    { value: "MEDIUM", maxTrade: "$2,500", gasLimit: "0.005 APT" },
-    { value: "HIGH", maxTrade: "$5,000", gasLimit: "0.01 APT" },
-    { value: "VERY_HIGH", maxTrade: "$10,000", gasLimit: "0.05 APT" },
+    { value: "LOW", maxTrade: "$1,000", gasLimit: "0.003 ALGO" },
+    { value: "MEDIUM", maxTrade: "$2,500", gasLimit: "0.005 ALGO" },
+    { value: "HIGH", maxTrade: "$5,000", gasLimit: "0.01 ALGO" },
+    { value: "VERY_HIGH", maxTrade: "$10,000", gasLimit: "0.05 ALGO" },
   ];
   
   const selectedRisk = riskLevels.find(r => r.value === riskLevel);

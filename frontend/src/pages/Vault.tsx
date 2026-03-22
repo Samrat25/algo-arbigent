@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Download, Upload, Wallet, CheckCircle, AlertCircle, RefreshCw, ExternalLink, Clock } from "lucide-react";
 import Header from "@/components/Header";
@@ -24,11 +23,12 @@ interface Transaction {
   coinSymbol: string;
   amountFormatted: number;
   timestamp: string;
+  createdAt?: string;
 }
 
 const Vault = () => {
   const { account, connected, balances, smartContract } = useAlgorandWallet();
-  const { vault, isLoading: vaultLoading, refreshVault, getFormattedBalance } = useVault();
+  const { isLoading: vaultLoading, refreshVault, getFormattedBalance } = useVault();
   const [selectedToken, setSelectedToken] = useState<"ALGO" | "USDC" | "USDT">("ALGO");
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
@@ -116,7 +116,7 @@ const Vault = () => {
       let success = false;
       if (selectedToken === 'ALGO') {
         success = await smartContract.depositALGOtoVault(depositAmount);
-      } else {
+      } else if (selectedToken === 'USDC' || selectedToken === 'USDT') {
         success = await smartContract.depositTokenToVault(depositAmount, selectedToken);
       }
       
@@ -453,8 +453,9 @@ const Vault = () => {
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <p>• You must opt-in to USDC and USDT assets before depositing them</p>
-              <p>• Minimum balance requirements apply for Algorand accounts</p>
-              <p>• Transaction fees are approximately 0.001 ALGO per transaction</p>
+              <p>• <strong>Minimum Balance:</strong> Algorand accounts must maintain a minimum balance of 0.1 ALGO + 0.1 ALGO per asset/app opted in</p>
+              <p>• Your account has opted into 41 assets, requiring ~5.4 ALGO minimum balance</p>
+              <p>• Transaction fees are approximately 0.001-0.002 ALGO per transaction</p>
               <p>• Connected to Algorand Testnet</p>
             </CardContent>
           </Card>
@@ -498,10 +499,6 @@ const Vault = () => {
                       // Remove timestamp suffix but keep the real TxID
                       baseTxHash = baseTxHash.split('-')[0];
                     }
-                    
-                    const displayTxHash = isProfitClaim 
-                      ? tx.transactionHash.substring(7) // Remove 'PROFIT-' prefix
-                      : baseTxHash;
                     
                     return (
                       <div
