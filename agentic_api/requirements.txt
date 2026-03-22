@@ -1,4 +1,4 @@
-# Aptos Arbitrage API Dependencies
+
 
 # FastAPI and server
 fastapi>=0.104.0

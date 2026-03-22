@@ -1,16 +1,11 @@
-# Aptos
-/.aptos
-.aptos/
-**/move/.aptos/
-**/move/build/
+
 .kiro
 # IDE
 /.vscode
 .idea/
 *.swp
 *.swo
-*~
-.kiro\specs\aptos-arbitrage-system
+
 
 # Node.js
 node_modules/
