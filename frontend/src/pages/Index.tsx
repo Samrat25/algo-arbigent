@@ -53,7 +53,6 @@ const Index = () => {
           <p className="text-center text-xs font-semibold text-primary uppercase tracking-[0.3em] font-mono">Connected Wallets</p>
         </div>
         
- main
         <div className="relative w-full">
           <LogoLoop
             logos={[
@@ -198,7 +197,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-main
 
       
       {/* CTA Section */}
@@ -244,7 +242,6 @@ main
           </div>
         </div>
       </footer>
- main
 
       {/* How It Works Timeline */}
       <HowItWorks />
