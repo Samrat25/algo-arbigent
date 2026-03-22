@@ -11,6 +11,9 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Vault from "./pages/Vault";
 import Agents from "./pages/Agents";
+import ApiEndpoints from "./pages/ApiEndpoints";
+import Pricing from "./pages/Pricing";
+import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +29,9 @@ const App = () => (
             <Routes>
               {/* Public route - no wallet connection required */}
               <Route path="/" element={<Index />} />
+              <Route path="/api-endpoints" element={<ApiEndpoints />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/faq" element={<FAQ />} />
               
               {/* Protected routes - wallet connection required */}
               <Route 
