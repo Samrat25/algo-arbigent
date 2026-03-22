@@ -87,7 +87,7 @@ const Index = () => {
               >
                 <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 mb-6">
                   <Radio className="h-3 w-3 mt-auto text-primary animate-pulse " />
-                  <span className="text-sm font-display font-bold text-primary">CURRENTLY ON APTOS </span>
+                  <span className="text-sm font-display font-bold text-primary">CURRENTLY ON ALGORAND TESTNET</span>
                 </div>
                 
                 <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-none tracking-wide mb-6 text-gradient-hero">
@@ -97,7 +97,7 @@ const Index = () => {
                 </h1>
                 
                 <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-lg">
-                  Execute autonomous arbitrage agents that continuously scan Aptos DEX, monitor prices, simulate execution paths, and atomatically execute profitable trades using confidential computation.
+                  Execute autonomous arbitrage agents that continuously scan Algorand DEXs, monitor prices, simulate execution paths, and automatically execute profitable trades using smart contracts.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -246,7 +246,7 @@ const Index = () => {
               <span className="font-display text-lg font-bold tracking-wide">ARBIGENT</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2025 Arbigent. Built on Aptos.
+              © 2025 Arbigent. Built on Algorand.
             </p>
           </div>
         </div>

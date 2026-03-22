@@ -5,12 +5,15 @@ const transactionLogSchema = new mongoose.Schema({
     type: String,
     required: true,
     index: true,
-    lowercase: true,
+    uppercase: true,  // Algorand addresses are uppercase
     validate: {
       validator: function(v) {
-        return /^0x[a-fA-F0-9]{64}$/.test(v);
+        // Support both Ethereum (0x...) and Algorand addresses
+        const isEthereum = /^0x[a-fA-F0-9]{64}$/.test(v);
+        const isAlgorand = /^[A-Z2-7]{58}$/.test(v);  // Algorand addresses are 58 chars, base32
+        return isEthereum || isAlgorand;
       },
-      message: 'Invalid wallet address format'
+      message: 'Invalid wallet address format (must be Ethereum 0x... or Algorand address)'
     }
   },
   transactionHash: {
@@ -162,7 +165,7 @@ transactionLogSchema.virtual('displayAmount').get(function() {
 // Static method to create transaction log
 transactionLogSchema.statics.createLog = async function(logData) {
   const log = new this({
-    walletAddress: logData.walletAddress.toLowerCase(),
+    walletAddress: logData.walletAddress.toUpperCase(),  // Algorand addresses are uppercase
     transactionHash: logData.transactionHash,
     type: logData.type,
     status: logData.status || 'pending',
@@ -210,7 +213,7 @@ transactionLogSchema.statics.getUserHistory = function(walletAddress, options = 
     sortOrder = -1
   } = options;
   
-  const query = { walletAddress: walletAddress.toLowerCase() };
+  const query = { walletAddress: walletAddress.toUpperCase() };  // Algorand addresses are uppercase
   
   if (type) query.type = type;
   if (status) query.status = status;
@@ -244,7 +247,7 @@ transactionLogSchema.statics.getStats = async function(walletAddress, timeframe 
   const pipeline = [
     {
       $match: {
-        walletAddress: walletAddress.toLowerCase(),
+        walletAddress: walletAddress.toUpperCase(),  // Algorand addresses are uppercase
         createdAt: { $gte: startDate },
         status: 'confirmed'
       }

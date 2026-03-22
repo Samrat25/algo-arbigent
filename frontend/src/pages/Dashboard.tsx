@@ -197,46 +197,46 @@ const Dashboard = () => {
 
   // Calculate total vault value in USD
   const calculateTotalVaultValue = () => {
-    if (!vault || !tokenPrices) return { total: 0, aptBalance: 0 };
+    if (!vault || !tokenPrices) return { total: 0, algoBalance: 0 };
 
     let total = 0;
-    let aptBalance = 0;
+    let algoBalance = 0;
 
     vault.balances.forEach(balance => {
       const symbol = balance.coinSymbol.toUpperCase();
       const price = tokenPrices[symbol];
       if (price) {
-        const decimals = symbol === 'APT' ? 8 : 6;
+        const decimals = 6; // All tokens use 6 decimals on Algorand
         const balanceNum = (parseFloat(balance.balance) || 0) / Math.pow(10, decimals);
         const priceStr = price.price.replace('$', '').replace(',', '');
         const priceNum = parseFloat(priceStr) || 0;
         const value = balanceNum * priceNum;
         total += value;
 
-        if (symbol === 'APT') {
-          aptBalance = balanceNum;
+        if (symbol === 'ALGO') {
+          algoBalance = balanceNum;
         }
       }
     });
 
-    return { total, aptBalance };
+    return { total, algoBalance };
   };
 
   const vaultStats = calculateTotalVaultValue();
-  const aptPrice = tokenPrices.APT?.price || '$0.00';
-  const aptChange = tokenPrices.APT?.change || '+0.0%';
+  const algoPrice = tokenPrices?.ALGO?.price || '$0.00';
+  const algoChange = tokenPrices?.ALGO?.change || '+0.0%';
 
   // Transform opportunities for display
   const displayOpportunities = (opportunities || []).slice(0, 5).map(opp => {
     const fromToken = opp.route.from_pair?.split('_')[0]?.toUpperCase() || 'UNKNOWN';
-    const toToken = opp.route.to_pair?.split('_')[1]?.toUpperCase() || 'APT';
+    const toToken = opp.route.to_pair?.split('_')[1]?.toUpperCase() || 'ALGO';
 
     return {
       pair: `${fromToken}/${toToken}`,
       route: `${opp.route.from_dex} → ${opp.route.to_dex}`,
       spread: `${(opp.profitability.price_difference_percent || 0).toFixed(2)}%`,
       profit: `$${opp.profitability.net_profit_usd.toFixed(2)}`,
-      gas: `${(opp.charges?.gas_fees?.total_gas_cost_apt || 0).toFixed(3)} APT`,
+      gas: `${(opp.charges?.gas_fees?.total_gas_cost_algo || 0).toFixed(6)} ALGO`,
       risk: opp.risk_level.toUpperCase(),
       isExecutable: opp.profitability.is_profitable && opp.profitability.net_profit_usd > 1
     };
@@ -335,8 +335,8 @@ const Dashboard = () => {
             <StatsCard
               icon={Wallet}
               label="Total Vault Balance"
-              value={`$${vaultStats.total.toFixed(2)}`}
-              // subValue={`APT: ${vaultStats.aptBalance.toFixed(4)}`}
+              value={`$${(vaultStats?.total || 0).toFixed(2)}`}
+              subValue={`ALGO: ${(vaultStats?.algoBalance || 0).toFixed(4)}`}
               delay={0}
               isLoading={vaultLoading}
             />
@@ -375,9 +375,9 @@ const Dashboard = () => {
             />
             <StatsCard
               icon={Activity}
-              label="APT Price"
-              value={aptPrice}
-              subValue={`24h: ${aptChange}`}
+              label="ALGO Price"
+              value={algoPrice}
+              subValue={`24h: ${algoChange}`}
               delay={0.3}
               isLoading={marketLoading}
             />
@@ -450,7 +450,7 @@ const Dashboard = () => {
                 </div>
                 <h3 className="font-display text-xl font-bold tracking-wide text-foreground mb-2">NO ACTIVE AGENTS</h3>
                 <p className="text-muted-foreground max-w-md mb-6">
-                  Deploy your first autonomous trading agent to start capturing arbitrage opportunities across Aptos DEXs.
+                  Deploy your first autonomous trading agent to start capturing arbitrage opportunities across Algorand DEXs.
                 </p>
                 <Button variant="glow" size="lg" asChild>
                   <Link to="/agents">
