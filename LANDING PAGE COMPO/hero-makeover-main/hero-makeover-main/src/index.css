@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 260 30% 10%;
+    --foreground: 260 20% 95%;
+
+    --card: 260 30% 14%;
+    --card-foreground: 260 20% 95%;
+
+    --popover: 260 30% 14%;
+    --popover-foreground: 260 20% 95%;
+
+    --primary: 270 80% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 260 25% 18%;
+    --secondary-foreground: 260 20% 90%;
+
+    --muted: 260 20% 20%;
+    --muted-foreground: 260 15% 60%;
+
+    --accent: 270 80% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 260 20% 22%;
+    --input: 260 20% 22%;
+    --ring: 270 80% 65%;
+
+    --radius: 0.75rem;
+
+    --hero-gradient: linear-gradient(135deg, hsl(270 40% 15%) 0%, hsl(260 30% 8%) 50%, hsl(270 35% 12%) 100%);
+    --glow-purple: 270 80% 65%;
+    --surface-glass: 260 30% 16%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .font-hero {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .glass-surface {
+    background: hsl(var(--surface-glass) / 0.6);
+    backdrop-filter: blur(16px);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+  .glow-sm {
+    box-shadow: 0 0 20px hsl(var(--glow-purple) / 0.15);
+  }
+  .glow-md {
+    box-shadow: 0 0 40px hsl(var(--glow-purple) / 0.2);
+  }
+}
+
+/* Grid background effect */
+.grid-bg {
+  background-image: 
+    linear-gradient(hsl(var(--glow-purple) / 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--glow-purple) / 0.06) 1px, transparent 1px);
+  background-size: 60px 60px;
+}

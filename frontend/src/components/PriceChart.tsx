@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, RefreshCw, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
 
 interface PriceDataPoint {
   time: number;
   APT: number;
-  USDC: number;
-  USDT: number;
+  ALGO: number;
+  SOL: number;
 }
 
 interface TokenPriceInfo {
@@ -17,92 +18,109 @@ interface TokenPriceInfo {
   name: string;
 }
 
-type TokenKey = 'APT' | 'USDC' | 'USDT';
+type TokenKey = 'APT' | 'ALGO' | 'SOL';
 
 // Coinbase API endpoints
 const COINBASE_APT_API = 'https://api.coinbase.com/v2/prices/APT-USD/spot';
-const COINBASE_USDC_API = 'https://api.coinbase.com/v2/prices/USDC-USD/spot';
-const COINBASE_USDT_API = 'https://api.coinbase.com/v2/prices/USDT-USD/spot';
+const COINBASE_ALGO_API = 'https://api.coinbase.com/v2/prices/ALGO-USD/spot';
+const COINBASE_SOL_API = 'https://api.coinbase.com/v2/prices/SOL-USD/spot';
 
 // 5 minute window = 300 seconds, at 3s intervals = 100 max points
 const MAX_POINTS = 100;
 const REFRESH_INTERVAL = 3000;
 
+// @ts-ignore
+const win = window as unknown as any;
+
+// Global state outside the component for persistence across route changes & HMR
+win.globalPriceHistory = win.globalPriceHistory || [];
+win.globalPrices = win.globalPrices || {
+  APT: { price: 0, prevPrice: 0, color: '#ef4444', name: 'APT' },
+  ALGO: { price: 0, prevPrice: 0, color: '#3b82f6', name: 'ALGO' },
+  SOL: { price: 0, prevPrice: 0, color: '#14f195', name: 'SOL' }
+};
+win.__chartListeners = win.__chartListeners || new Set<() => void>();
+
+const notifyListeners = () => win.__chartListeners.forEach((l: any) => l());
+
+// Start global polling strictly once, resetting strictly on HMR
+if (win.fetchPricesInterval) {
+  clearInterval(win.fetchPricesInterval);
+}
+
+const fetchPrices = async () => {
+  try {
+    const [aptResponse, algoResponse, solResponse] = await Promise.all([
+      fetch(COINBASE_APT_API).catch(() => null),
+      fetch(COINBASE_ALGO_API).catch(() => null),
+      fetch(COINBASE_SOL_API).catch(() => null)
+    ]);
+
+    let aptPrice = 1.5;
+    let algoPrice = 0.2;
+    let solPrice = 150.0;
+
+    if (aptResponse && aptResponse.ok) {
+      const data = await aptResponse.json();
+      aptPrice = parseFloat(data.data?.amount) || 1.5;
+    }
+    if (algoResponse && algoResponse.ok) {
+      const data = await algoResponse.json();
+      algoPrice = parseFloat(data.data?.amount) || 0.2;
+    }
+    if (solResponse && solResponse.ok) {
+      const data = await solResponse.json();
+      solPrice = parseFloat(data.data?.amount) || 150.0;
+    }
+
+    win.globalPrices = {
+      APT: { ...win.globalPrices.APT, price: aptPrice, prevPrice: win.globalPrices.APT.price || aptPrice },
+      ALGO: { ...win.globalPrices.ALGO, price: algoPrice, prevPrice: win.globalPrices.ALGO.price || algoPrice },
+      SOL: { ...win.globalPrices.SOL, price: solPrice, prevPrice: win.globalPrices.SOL.price || solPrice }
+    };
+
+    const newPoint: PriceDataPoint = {
+      time: Date.now(),
+      APT: aptPrice,
+      ALGO: algoPrice,
+      SOL: solPrice
+    };
+
+    const newHistory = [...win.globalPriceHistory, newPoint];
+    if (newHistory.length > MAX_POINTS) {
+      win.globalPriceHistory = newHistory.slice(-MAX_POINTS);
+    } else {
+      win.globalPriceHistory = newHistory;
+    }
+
+    notifyListeners();
+  } catch (err) {
+    console.error('Price fetch error:', err);
+  }
+};
+
+fetchPrices();
+win.fetchPricesInterval = setInterval(fetchPrices, REFRESH_INTERVAL);
+
 const PriceChart = () => {
-  const [priceHistory, setPriceHistory] = useState<PriceDataPoint[]>([]);
-  const [prices, setPrices] = useState<Record<string, TokenPriceInfo>>({
-    APT: { price: 0, prevPrice: 0, color: '#ef4444', name: 'APT' },
-    USDC: { price: 1, prevPrice: 1, color: '#3b82f6', name: 'USDC' },
-    USDT: { price: 1, prevPrice: 1, color: '#22c55e', name: 'USDT' }
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  // Subscribe to the global stores
+  const [, setTick] = useState(0);
   const [hoveredPoint, setHoveredPoint] = useState<PriceDataPoint | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [zoomLevel, setZoomLevel] = useState(1);
   const [selectedToken, setSelectedToken] = useState<TokenKey>('APT');
-
-  const fetchPrices = useCallback(async () => {
-    try {
-      const [aptResponse, usdcResponse, usdtResponse] = await Promise.all([
-        fetch(COINBASE_APT_API),
-        fetch(COINBASE_USDC_API),
-        fetch(COINBASE_USDT_API)
-      ]);
-
-      let aptPrice = 1.5;
-      let usdcPrice = 1;
-      let usdtPrice = 1;
-
-      if (aptResponse.ok) {
-        const data = await aptResponse.json();
-        aptPrice = parseFloat(data.data?.amount) || 1.5;
-      }
-      if (usdcResponse.ok) {
-        const data = await usdcResponse.json();
-        usdcPrice = parseFloat(data.data?.amount) || 1;
-      }
-      if (usdtResponse.ok) {
-        const data = await usdtResponse.json();
-        usdtPrice = parseFloat(data.data?.amount) || 1;
-      }
-
-      setPrices(prev => ({
-        APT: { ...prev.APT, price: aptPrice, prevPrice: prev.APT.price || aptPrice },
-        USDC: { ...prev.USDC, price: usdcPrice, prevPrice: prev.USDC.price || usdcPrice },
-        USDT: { ...prev.USDT, price: usdtPrice, prevPrice: prev.USDT.price || usdtPrice }
-      }));
-
-      const newPoint: PriceDataPoint = {
-        time: Date.now(),
-        APT: aptPrice,
-        USDC: usdcPrice,
-        USDT: usdtPrice
-      };
-
-      setPriceHistory(prev => {
-        const updated = [...prev, newPoint];
-        // Rolling 5-minute window
-        if (updated.length > MAX_POINTS) {
-          return updated.slice(-MAX_POINTS);
-        }
-        return updated;
-      });
-
-      setIsLoading(false);
-    } catch (err) {
-      console.error('Price fetch error:', err);
-      setIsLoading(false);
-    }
+  
+  useEffect(() => {
+    const listener = () => setTick(t => t + 1);
+    win.__chartListeners.add(listener);
+    return () => {
+      win.__chartListeners.delete(listener);
+    };
   }, []);
 
-  useEffect(() => {
-    // Initial fetch
-    fetchPrices();
-    
-    // Set up interval for continuous updates
-    const interval = setInterval(fetchPrices, REFRESH_INTERVAL);
-    return () => clearInterval(interval);
-  }, [fetchPrices]);
+  const priceHistory = win.globalPriceHistory;
+  const prices = win.globalPrices;
+  const isLoading = priceHistory.length === 0;
 
   // Zoom controls
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev * 1.5, 10));
@@ -313,7 +331,7 @@ const PriceChart = () => {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5 }}
-      className="rounded-2xl border border-border bg-card/90 backdrop-blur-md overflow-hidden"
+      className="rounded-2xl border border-primary bg-black/95 overflow-hidden"
     >
       {/* Header */}
       <div className="p-4 border-b border-border/50">
@@ -354,7 +372,7 @@ const PriceChart = () => {
                 style={{
                   backgroundColor: `${info.color}${isSelected ? '20' : '10'}`,
                   borderColor: `${info.color}${isSelected ? '80' : '40'}`,
-                  ringColor: isSelected ? info.color : undefined
+                  ...(isSelected ? { '--tw-ring-color': info.color } as React.CSSProperties : {})
                 }}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -384,77 +402,80 @@ const PriceChart = () => {
           })}
         </div>
       </div>
-
       {/* Chart */}
-      <div className="relative bg-slate-950/80" style={{ height: chartHeight }}>
-        <svg
-          width="100%"
-          height="100%"
-          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-          preserveAspectRatio="xMidYMid meet"
-          onMouseMove={handleMouseMove}
-          onMouseLeave={() => setHoveredPoint(null)}
-          className="cursor-crosshair"
-        >
-          {renderGridlines()}
-          {renderLine(selectedToken, tokenColor)}
-
-          {/* Crosshair */}
-          {hoveredPoint && (
-            <g>
-              <line
-                x1={padding.left}
-                y1={mousePos.y}
-                x2={chartWidth - padding.right}
-                y2={mousePos.y}
-                stroke="rgba(148, 163, 184, 0.5)"
-                strokeWidth="1"
-                strokeDasharray="4,4"
-              />
-              <line
-                x1={mousePos.x}
-                y1={padding.top}
-                x2={mousePos.x}
-                y2={chartHeight - padding.bottom}
-                stroke="rgba(148, 163, 184, 0.5)"
-                strokeWidth="1"
-                strokeDasharray="4,4"
-              />
-            </g>
-          )}
-        </svg>
-
-        {/* Tooltip */}
-        {hoveredPoint && (
-          <div
-            className="absolute bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-lg p-3 text-xs z-30 pointer-events-none shadow-2xl"
-            style={{
-              left: mousePos.x > chartWidth / 2 ? mousePos.x - 150 : mousePos.x + 15,
-              top: Math.max(mousePos.y - 60, 10)
-            }}
+      <div className="relative bg-slate-950/80 w-full" style={{ height: chartHeight }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart
+            data={priceHistory}
+            margin={{ top: padding.top, right: 0, left: 0, bottom: 0 }}
           >
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <div 
-                  className="w-2.5 h-2.5 rounded-full" 
-                  style={{ backgroundColor: tokenColor }}
-                />
-                <span className="text-gray-300 font-medium">{selectedToken}</span>
-              </div>
-              <span className="text-white font-mono font-bold">${hoveredPoint[selectedToken].toFixed(6)}</span>
-            </div>
-          </div>
-        )}
+            <defs>
+              <linearGradient id={`gradient-${selectedToken}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={tokenColor} stopOpacity={0.4} />
+                <stop offset="95%" stopColor={tokenColor} stopOpacity={0.0} />
+              </linearGradient>
+              <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" vertical={false} />
+            <XAxis 
+              dataKey="time" 
+              hide 
+            />
+            <YAxis 
+              domain={[minPrice, maxPrice]} 
+              hide 
+            />
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <div className="bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl p-3 shadow-2xl">
+                      <div className="flex items-center gap-2 mb-1 text-muted-foreground text-xs font-medium">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tokenColor }} />
+                        {selectedToken} Price
+                      </div>
+                      <div className="text-white font-mono text-lg font-bold">
+                        ${Number(payload[0].value).toFixed(6)}
+                      </div>
+                      <div className="text-muted-foreground text-[10px] mt-2">
+                        {new Date(payload[0].payload.time).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+              cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }}
+            />
+            <Area
+              type="monotone"
+              dataKey={selectedToken}
+              stroke={tokenColor}
+              strokeWidth={3}
+              fillOpacity={1}
+              fill={`url(#gradient-${selectedToken})`}
+              filter="url(#glow)"
+              isAnimationActive={false} // Disable to avoid flicker on polling
+            />
+          </AreaChart>
+        </ResponsiveContainer>
 
         {/* Selected Token Indicator */}
-        <div className="absolute bottom-2 left-4 flex items-center gap-2 text-xs bg-slate-900/70 px-3 py-1.5 rounded-lg">
-          <div 
-            className="w-3 h-1 rounded" 
-            style={{ backgroundColor: tokenColor }}
-          />
-          <span className="text-gray-300 font-medium">{selectedToken}</span>
-          <span className="text-gray-500">|</span>
-          <span className="text-gray-400">{priceHistory.length} points</span>
+        <div className="absolute bottom-4 left-4 flex items-center gap-2 text-xs bg-slate-900/60 backdrop-blur-md border border-white/5 px-3 py-1.5 rounded-lg shadow-xl">
+          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: tokenColor }} />
+          <span className="text-gray-300 font-medium">{selectedToken} Live Data</span>
+          <span className="text-gray-500 mx-1">|</span>
+          <span className="text-gray-400 font-mono">{priceHistory.length} points</span>
+        </div>
+        
+        {/* Y Axis Labels (Custom Overlay for styling) */}
+        <div className="absolute right-4 top-0 bottom-0 py-6 flex flex-col justify-between pointer-events-none text-[10px] font-mono text-muted-foreground/50 text-right">
+          <span>${maxPrice.toFixed(4)}</span>
+          <span>${currentPrice.toFixed(4)}</span>
+          <span>${minPrice.toFixed(4)}</span>
         </div>
       </div>
     </motion.div>
