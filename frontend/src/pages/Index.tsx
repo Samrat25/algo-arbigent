@@ -5,8 +5,12 @@ import LogoLoop from "@/components/LogoLoop";
 import ShapeGrid from "@/components/ShapeGrid";
 import PremiumCard from "@/components/PremiumCard";
 import HowItWorks from "@/components/HowItWorks";
-import { Activity, Zap, LineChart, Globe, Shield, Layers } from "lucide-react";
+import FeatureCard from "@/components/FeatureCard";
+import { Button } from "@/components/ui/button";
+import { Activity, Zap, LineChart, Globe, Shield, Layers, Radio, ArrowRight, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useAlgorandWallet } from "@/contexts/AlgorandWalletContext";
 
 const features = [
   {
@@ -42,6 +46,13 @@ const features = [
 ];
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { connected } = useAlgorandWallet();
+
+  const handleConnect = () => {
+    navigate('/dashboard');
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground dark">
       <Navbar />
@@ -76,8 +87,8 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Hero Section */}
-      <section className="py-20 relative overflow-hidden">
+      {/* Hero Section with Chart */}
+      <section className="py-24 relative overflow-hidden">
         <div className="container relative z-10 mx-auto px-4 lg:px-8">
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
             {/* Left: Hero Content */}
@@ -149,9 +160,8 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Feature Cards Section */}
+    
       <section className="py-24 relative overflow-hidden">
-        {/* ShapeGrid Background */}
         <div className="absolute inset-0 z-0 opacity-40">
           <ShapeGrid 
             speed={0}
