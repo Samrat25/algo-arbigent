@@ -1,4 +1,4 @@
-"""Optimized FastAPI for Aptos Arbitrage System - Live Data First with 5s Timeout"""
+"""Optimized FastAPI for Algorand Arbitrage System - Live Data First with 5s Timeout"""
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -27,7 +27,7 @@ from contextlib import asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler"""
     # Startup
-    print("🚀 Starting Aptos Arbitrage API v7.0.0...")
+    print("🚀 Starting Algorand Arbitrage API v7.0.0...")
     print("📊 Behavior: Always fetch live data first (5000ms timeout)")
     print("🔄 Fetching initial market data...")
     
@@ -40,13 +40,13 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown (if needed)
-    print("🛑 Shutting down Aptos Arbitrage API...")
+    print("🛑 Shutting down Algorand Arbitrage API...")
 
 
 # ============== FastAPI App ==============
 app = FastAPI(
-    title="Aptos Arbitrage API",
-    description="Aptos token arbitrage system - Always fetches live data with 5s timeout fallback",
+    title="Algorand Arbitrage API",
+    description="Algorand token arbitrage system - Always fetches live data with 5s timeout fallback",
     version="7.0.0",
     lifespan=lifespan
 )
@@ -101,19 +101,19 @@ class GlobalState:
             "base_currency": "usd",
             "chains": [
                 {
-                    "chain": "apt",
-                    "current_price": "12.45",
+                    "chain": "algo",
+                    "current_price": "0.30",
                     "gas_fees": "0.001",
-                    "tvl_usd": "850,000,000",
-                    "market_cap": "$5,200,000,000",
-                    "fully_diluted_valuation": "$5,200,000,000",
-                    "volume_24h": "$180,000,000"
+                    "tvl_usd": "250,000,000",
+                    "market_cap": "$2,500,000,000",
+                    "fully_diluted_valuation": "$3,000,000,000",
+                    "volume_24h": "$100,000,000"
                 },
                 {
                     "chain": "usdc",
                     "current_price": "1.00",
                     "gas_fees": "0.001",
-                    "tvl_usd": "850,000,000",
+                    "tvl_usd": "250,000,000",
                     "market_cap": "$25,000,000,000",
                     "fully_diluted_valuation": "$25,000,000,000",
                     "volume_24h": "$2,800,000,000"
@@ -122,7 +122,7 @@ class GlobalState:
                     "chain": "usdt",
                     "current_price": "0.999",
                     "gas_fees": "0.001",
-                    "tvl_usd": "850,000,000",
+                    "tvl_usd": "250,000,000",
                     "market_cap": "$95,000,000,000",
                     "fully_diluted_valuation": "$95,000,000,000",
                     "volume_24h": "$15,000,000,000"
@@ -192,43 +192,43 @@ state = GlobalState()
 
 # ============== Request Models ==============
 class ArbitrageChargesRequest(BaseModel):
-    from_token: str = Field(..., description="Source token (usdc, apt, usdt)")
-    to_token: str = Field(..., description="Destination token (usdc, apt, usdt)")
-    amount_apt: Optional[float] = Field(default=None, description="Investment amount in APT")
+    from_token: str = Field(..., description="Source token (usdc, algo, usdt)")
+    to_token: str = Field(..., description="Destination token (usdc, algo, usdt)")
+    amount_algo: Optional[float] = Field(default=None, description="Investment amount in ALGO")
     amount_usd: Optional[float] = Field(default=None, description="Investment amount in USD")
     trade_amount: Optional[float] = Field(default=None, description="Direct trade amount in USD (alias for amount_usd)")
     dex_fees: Optional[Dict[str, float]] = Field(default=None, description="Custom DEX fees (if not provided, fees = 0)")
     current_prices: Optional[List[Dict[str, str]]] = Field(default=None, description="Custom prices")
-    apt_price: Optional[str] = Field(default=None, description="Direct APT price override")
+    algo_price: Optional[str] = Field(default=None, description="Direct ALGO price override")
 
 
 class ArbitrageProfitableRequest(BaseModel):
-    from_token: str = Field(..., description="Source token (usdc, apt, usdt)")
+    from_token: str = Field(..., description="Source token (usdc, algo, usdt)")
     to_token: Optional[str] = Field(default=None, description="Destination token (if not provided, check both USDC and USDT)")
-    amount_apt: Optional[float] = Field(default=None, description="Investment amount in APT")
+    amount_algo: Optional[float] = Field(default=None, description="Investment amount in ALGO")
     amount_usd: Optional[float] = Field(default=None, description="Investment amount in USD")
     trade_amount: Optional[float] = Field(default=None, description="Direct trade amount in USD (alias for amount_usd)")
     dex_fees: Optional[Dict[str, float]] = Field(default=None, description="Custom DEX fees (if not provided, fees = 0)")
     current_prices: Optional[List[Dict[str, str]]] = Field(default=None, description="Custom prices")
-    apt_price: Optional[str] = Field(default=None, description="Direct APT price override")
+    algo_price: Optional[str] = Field(default=None, description="Direct ALGO price override")
 
 
 class ArbitragePossibilitiesRequest(BaseModel):
-    amount_apt: Optional[float] = Field(default=None, description="Investment amount in APT")
+    amount_algo: Optional[float] = Field(default=None, description="Investment amount in ALGO")
     amount_usd: Optional[float] = Field(default=None, description="Investment amount in USD")
     trade_amount: Optional[float] = Field(default=None, description="Direct trade amount in USD (alias for amount_usd)")
     dex_fees: Optional[Dict[str, float]] = Field(default=None, description="Custom DEX fees (if not provided, fees = 0)")
     current_prices: Optional[List[Dict[str, str]]] = Field(default=None, description="Custom prices")
-    apt_price: Optional[str] = Field(default=None, description="Direct APT price override")
+    algo_price: Optional[str] = Field(default=None, description="Direct ALGO price override")
 
 
 class InvestmentOptimizationRequest(BaseModel):
-    from_token: str = Field(..., description="Source token (usdc, apt, usdt)")
-    to_token: str = Field(..., description="Destination token (usdc, apt, usdt)")
-    max_investment_apt: Optional[float] = Field(default=50000, description="Maximum APT investment to consider")
+    from_token: str = Field(..., description="Source token (usdc, algo, usdt)")
+    to_token: str = Field(..., description="Destination token (usdc, algo, usdt)")
+    max_investment_algo: Optional[float] = Field(default=500000, description="Maximum ALGO investment to consider")
     dex_fees: Optional[Dict[str, float]] = Field(default=None, description="Custom DEX fees")
     current_prices: Optional[List[Dict[str, str]]] = Field(default=None, description="Custom prices")
-    apt_price: Optional[str] = Field(default=None, description="Direct APT price override")
+    algo_price: Optional[str] = Field(default=None, description="Direct ALGO price override")
 
 
 # ============== Helper Functions ==============
@@ -264,41 +264,41 @@ def parse_custom_prices(current_prices: Optional[List[Dict[str, str]]]) -> Optio
 
 
 def get_trade_amount(
-    amount_apt: Optional[float],
+    amount_algo: Optional[float],
     amount_usd: Optional[float],
-    apt_price: float,
+    algo_price: float,
     trade_amount: Optional[float] = None
 ) -> float:
-    """Get trade amount in USD, prioritizing: trade_amount > amount_apt > amount_usd > default"""
+    """Get trade amount in USD, prioritizing: trade_amount > amount_algo > amount_usd > default"""
     if trade_amount is not None:
         return trade_amount
-    elif amount_apt is not None:
-        return amount_apt * apt_price
+    elif amount_algo is not None:
+        return amount_algo * algo_price
     elif amount_usd is not None:
         return amount_usd
     else:
         return 1000.0
 
 
-def get_current_apt_price(market_data: Dict[str, Any]) -> float:
-    """Extract current APT price from market data"""
+def get_current_algo_price(market_data: Dict[str, Any]) -> float:
+    """Extract current ALGO price from market data"""
     try:
         for chain in market_data.get("chains", []):
-            if chain.get("chain") == "apt":
-                return float(chain.get("current_price", 12.45))
+            if chain.get("chain") == "algo":
+                return float(chain.get("current_price", 0.30))
     except:
         pass
-    return 12.45
+    return 0.30
 
 
-def get_effective_apt_price(market_data: Dict[str, Any], custom_apt_price: Optional[str] = None) -> float:
-    """Get APT price, prioritizing custom price over live data"""
-    if custom_apt_price:
+def get_effective_algo_price(market_data: Dict[str, Any], custom_algo_price: Optional[str] = None) -> float:
+    """Get ALGO price, prioritizing custom price over live data"""
+    if custom_algo_price:
         try:
-            return float(custom_apt_price)
+            return float(custom_algo_price)
         except (ValueError, TypeError):
             pass
-    return get_current_apt_price(market_data)
+    return get_current_algo_price(market_data)
 
 
 # ============== API Routes ==============
@@ -306,10 +306,10 @@ def get_effective_apt_price(market_data: Dict[str, Any], custom_apt_price: Optio
 async def root():
     """API root endpoint"""
     return {
-        "name": "Aptos Arbitrage API",
+        "name": "Algorand Arbitrage API",
         "version": "7.0.0",
-        "ecosystem": "aptos",
-        "supported_tokens": ["APT", "USDC", "USDT"],
+        "ecosystem": "algorand",
+        "supported_tokens": ["ALGO", "USDC", "USDT"],
         "endpoints": [
             "GET /market/overview",
             "POST /arbitrage/getcharges",
@@ -326,7 +326,7 @@ async def root():
 @app.get("/market/overview")
 async def get_market_overview():
     """
-    Get Aptos market overview for APT, USDC, USDT
+    Get Algorand market overview for ALGO, USDC, USDT
     
     Behavior:
     - Always tries to fetch live data first
@@ -340,16 +340,16 @@ async def get_market_overview():
 @app.post("/arbitrage/getcharges")
 async def get_arbitrage_charges(request: ArbitrageChargesRequest):
     """
-    Calculate all charges for Aptos token arbitrage
+    Calculate all charges for Algorand token arbitrage
     Tries live data first, falls back to stored on timeout
     """
     try:
         # First get live market data
         market_data = await state.fetch_live_market_data()
-        apt_price = get_effective_apt_price(market_data, request.apt_price)
+        algo_price = get_effective_algo_price(market_data, request.algo_price)
         
-        # Determine trade amount (supports trade_amount, amount_apt, or amount_usd)
-        trade_amount = get_trade_amount(request.amount_apt, request.amount_usd, apt_price, request.trade_amount)
+        # Determine trade amount (supports trade_amount, amount_algo, or amount_usd)
+        trade_amount = get_trade_amount(request.amount_algo, request.amount_usd, algo_price, request.trade_amount)
         
         # Parse custom prices
         custom_prices = parse_custom_prices(request.current_prices)
@@ -359,12 +359,12 @@ async def get_arbitrage_charges(request: ArbitrageChargesRequest):
         
         input_data = {
             "action": "getcharges",
-            "from_pair": f"{request.from_token}_apt" if request.to_token == "apt" else f"apt_{request.to_token}",
-            "to_pair": f"{request.to_token}_apt" if request.from_token == "apt" else f"apt_{request.from_token}",
+            "from_pair": f"{request.from_token}_algo" if request.to_token == "algo" else f"algo_{request.to_token}",
+            "to_pair": f"{request.to_token}_algo" if request.from_token == "algo" else f"algo_{request.from_token}",
             "trade_amount": trade_amount,
             "current_prices": custom_prices,
             "custom_dex_fees": dex_fees,
-            "apt_price": apt_price  # Pass consistent APT price to agent
+            "algo_price": algo_price  # Pass consistent ALGO price to agent
         }
         
         # Execute with timeout using the appropriate agent
@@ -385,9 +385,9 @@ async def get_arbitrage_charges(request: ArbitrageChargesRequest):
         
         if result.get("status") == "success":
             result["investment_details"] = {
-                "amount_apt": request.amount_apt,
+                "amount_algo": request.amount_algo,
                 "amount_usd": trade_amount,
-                "apt_price_used": apt_price,
+                "algo_price_used": algo_price,
                 "dex_fees_applied": len(dex_fees) > 0
             }
         
@@ -400,36 +400,36 @@ async def get_arbitrage_charges(request: ArbitrageChargesRequest):
 @app.post("/arbitrage/isprofitable")
 async def is_arbitrage_profitable(request: ArbitrageProfitableRequest):
     """
-    Detect if Aptos token arbitrage is profitable
+    Detect if Algorand token arbitrage is profitable
     If to_token not provided, checks both USDC and USDT
     """
     try:
         # First get live market data
         market_data = await state.fetch_live_market_data()
-        apt_price = get_effective_apt_price(market_data, request.apt_price)
+        algo_price = get_effective_algo_price(market_data, request.algo_price)
         
-        trade_amount = get_trade_amount(request.amount_apt, request.amount_usd, apt_price, request.trade_amount)
+        trade_amount = get_trade_amount(request.amount_algo, request.amount_usd, algo_price, request.trade_amount)
         custom_prices = parse_custom_prices(request.current_prices)
         dex_fees = request.dex_fees or {}
         
         # If no to_token, check both USDC and USDT
-        tokens_to_check = [request.to_token] if request.to_token else [t for t in ["usdc", "usdt", "apt"] if t != request.from_token]
+        tokens_to_check = [request.to_token] if request.to_token else [t for t in ["usdc", "usdt", "algo"] if t != request.from_token]
         
         results = []
         for to_token in tokens_to_check:
             # Construct pairs correctly based on from_token and to_token
-            if request.from_token == "apt":
-                # APT is the starting token
-                from_pair = f"apt_{to_token}"
-                to_pair = f"{to_token}_apt"
-            elif to_token == "apt":
-                # APT is the destination token
-                from_pair = f"{request.from_token}_apt"
-                to_pair = f"apt_{request.from_token}"
+            if request.from_token == "algo":
+                # ALGO is the starting token
+                from_pair = f"algo_{to_token}"
+                to_pair = f"{to_token}_algo"
+            elif to_token == "algo":
+                # ALGO is the destination token
+                from_pair = f"{request.from_token}_algo"
+                to_pair = f"algo_{request.from_token}"
             else:
-                # Both are non-APT tokens, route through APT
-                from_pair = f"{request.from_token}_apt"
-                to_pair = f"apt_{to_token}"
+                # Both are non-ALGO tokens, route through ALGO
+                from_pair = f"{request.from_token}_algo"
+                to_pair = f"algo_{to_token}"
             
             input_data = {
                 "action": "isprofitable",
@@ -438,7 +438,7 @@ async def is_arbitrage_profitable(request: ArbitrageProfitableRequest):
                 "trade_amount": trade_amount,
                 "current_prices": custom_prices,
                 "custom_dex_fees": dex_fees,
-                "apt_price": apt_price  # Pass consistent APT price to agent
+                "algo_price": algo_price  # Pass consistent ALGO price to agent
             }
             
             # Execute with timeout using the appropriate agent
@@ -459,7 +459,7 @@ async def is_arbitrage_profitable(request: ArbitrageProfitableRequest):
             
             if result.get("status") == "success":
                 result["to_token"] = to_token.upper()
-                result["investment_details"] = {"amount_apt": request.amount_apt, "amount_usd": trade_amount, "apt_price_used": apt_price}
+                result["investment_details"] = {"amount_algo": request.amount_algo, "amount_usd": trade_amount, "algo_price_used": algo_price}
                 results.append(result)
         
         if len(results) == 1:
@@ -481,12 +481,12 @@ async def is_arbitrage_profitable(request: ArbitrageProfitableRequest):
 
 @app.post("/arbitrage/possibilities")
 async def find_arbitrage_possibilities(request: ArbitragePossibilitiesRequest):
-    """Find all Aptos arbitrage possibilities"""
+    """Find all Algorand arbitrage possibilities"""
     try:
         market_data = await state.fetch_live_market_data()
-        apt_price = get_effective_apt_price(market_data, request.apt_price)
+        algo_price = get_effective_algo_price(market_data, request.algo_price)
         
-        trade_amount = get_trade_amount(request.amount_apt, request.amount_usd, apt_price, request.trade_amount)
+        trade_amount = get_trade_amount(request.amount_algo, request.amount_usd, algo_price, request.trade_amount)
         custom_prices = parse_custom_prices(request.current_prices)
         dex_fees = request.dex_fees or {}
         
@@ -495,7 +495,7 @@ async def find_arbitrage_possibilities(request: ArbitragePossibilitiesRequest):
             "trade_amount": trade_amount,
             "current_prices": custom_prices,
             "custom_dex_fees": dex_fees,
-            "apt_price": apt_price  # Pass consistent APT price to agent
+            "algo_price": algo_price  # Pass consistent ALGO price to agent
         }
         
         # Execute with timeout using the appropriate agent
@@ -515,7 +515,7 @@ async def find_arbitrage_possibilities(request: ArbitragePossibilitiesRequest):
             )
         
         if result.get("status") == "success":
-            result["investment_details"] = {"amount_apt": request.amount_apt, "amount_usd": trade_amount, "apt_price_used": apt_price, "dex_fees_applied": len(dex_fees) > 0}
+            result["investment_details"] = {"amount_algo": request.amount_algo, "amount_usd": trade_amount, "algo_price_used": algo_price, "dex_fees_applied": len(dex_fees) > 0}
         
         return result
         
@@ -525,11 +525,10 @@ async def find_arbitrage_possibilities(request: ArbitragePossibilitiesRequest):
 
 @app.post("/arbitrage/optimize-investment")
 async def optimize_investment(request: InvestmentOptimizationRequest):
-    """Find optimal APT investment amount for maximum profitability"""
+    """Find optimal ALGO investment amount for maximum profitability"""
     try:
-        # First get live market data (MISSING - this was the bug!)
         market_data = await state.fetch_live_market_data()
-        apt_price = get_effective_apt_price(market_data, request.apt_price)
+        algo_price = get_effective_algo_price(market_data, request.algo_price)
         
         custom_prices = parse_custom_prices(request.current_prices)
         dex_fees = request.dex_fees or {}
@@ -538,10 +537,10 @@ async def optimize_investment(request: InvestmentOptimizationRequest):
             "action": "optimize_investment",
             "from_token": request.from_token,
             "to_token": request.to_token,
-            "max_investment_apt": request.max_investment_apt,
+            "max_investment_algo": request.max_investment_algo,
             "current_prices": custom_prices,
             "dex_fees": dex_fees,
-            "apt_price": apt_price  # Pass live APT price to optimizer
+            "algo_price": algo_price  # Pass live ALGO price to optimizer
         }
         
         result = await execute_with_timeout(
@@ -561,8 +560,8 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "ecosystem": "aptos",
-        "supported_tokens": ["APT", "USDC", "USDT"],
+        "ecosystem": "algorand",
+        "supported_tokens": ["ALGO", "USDC", "USDT"],
         "timeout_ms": state.timeout_ms,
         "last_successful_fetch_seconds_ago": round(time.time() - state.last_successful_fetch, 1) if state.last_successful_fetch > 0 else None,
         "behavior": "Always fetches live data first, returns stored on timeout",
@@ -585,3 +584,4 @@ if __name__ == "__main__":
         reload=True,
         log_level="info"
     )
+
