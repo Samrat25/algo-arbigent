@@ -14,10 +14,11 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Oxanium", "sans-serif"],
-        sans: ["IBM Plex Mono", "monospace"],
-        mono: ["Francois One", "sans-serif"],
-        serif: ["Oxanium", "sans-serif"],
+        display: ["Lexend Deca", "sans-serif"],
+        sans: ["Lexend Deca", "sans-serif"],
+        mono: ["Lexend Deca", "sans-serif"],
+        serif: ["Lexend Deca", "sans-serif"],
+        hero: ["Lexend Deca", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -92,6 +93,10 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "fade-up": {
+          from: { opacity: "0", transform: "translateY(20px)", filter: "blur(4px)" },
+          to: { opacity: "1", transform: "translateY(0)", filter: "blur(0)" },
+        },
         "fade-in": {
           "0%": { opacity: "0", transform: "translateY(10px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
@@ -120,6 +125,7 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-up": "fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards",
         "fade-in": "fade-in 0.5s ease-out",
         "fade-in-up": "fade-in-up 0.6s ease-out",
         "scale-in": "scale-in 0.3s ease-out",
