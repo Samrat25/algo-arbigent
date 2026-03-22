@@ -88,7 +88,7 @@ const Header = () => {
             {connected && account?.address ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="default" className="hidden sm:flex gap-2">
+                  <Button variant="outline" size="default" className="hidden sm:flex gap-2 text-white">
                     <Wallet className="h-4 w-4" />
                     {truncateAddress(account.address)}
                   </Button>
@@ -97,7 +97,7 @@ const Header = () => {
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium">Connected Wallet</p>
-                      <p className="text-xs text-muted-foreground">{wallet?.name || 'Algorand Wallet'}</p>
+                      <p className="text-xs text-white">{wallet?.name || 'Algorand Wallet'}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />

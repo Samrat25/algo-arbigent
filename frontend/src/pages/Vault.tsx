@@ -36,6 +36,7 @@ const Vault = () => {
   const [optInSuccess, setOptInSuccess] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
+  
 
   // Fetch transaction history
   const fetchTransactions = async () => {
@@ -54,6 +55,14 @@ const Vault = () => {
       setLoadingTransactions(false);
     }
   };
+
+  const AnimatedBackground = () => (
+  <div className="fixed inset-0 pointer-events-none">
+    <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/[0.07] rounded-full blur-3xl animate-pulse" />
+    <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/[0.07] rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-primary/[0.03] to-orange-500/[0.03] rounded-full blur-3xl" />
+  </div>
+);
 
   // Refresh vault on mount and after transactions
   useEffect(() => {
@@ -155,6 +164,7 @@ const Vault = () => {
   if (!connected) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
+        
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <Wallet className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
@@ -167,10 +177,12 @@ const Vault = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background dark">
+
       <Header />
       
       <main className="pt-24 pb-16">
+        <AnimatedBackground />
         <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
           <div className="mb-8">
             <Link to="/dashboard" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
