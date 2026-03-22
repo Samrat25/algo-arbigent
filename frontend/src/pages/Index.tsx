@@ -1,94 +1,80 @@
-import Navbar from "@/components/Navbar";
-import HeroSection from "@/components/HeroSection";
-import PriceChart from "@/components/PriceChart";
-import LogoLoop from "@/components/LogoLoop";
-import ShapeGrid from "@/components/ShapeGrid";
-import PremiumCard from "@/components/PremiumCard";
-import HowItWorks from "@/components/HowItWorks";
-import FeatureCard from "@/components/FeatureCard";
-import { Button } from "@/components/ui/button";
-import { Activity, Zap, LineChart, Globe, Shield, Layers, Radio, ArrowRight, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { Bot, Shield, Target, TrendingUp, ArrowRight, Zap, Radio } from "lucide-react";
+import Header from "@/components/Header";
+import FeatureCard from "@/components/FeatureCard";
+import PriceChart from "@/components/PriceChart";
+import { WalletConnectionPrompt } from "@/components/WalletConnectionPrompt";
+import { Button } from "@/components/ui/button";
 import { useAlgorandWallet } from "@/contexts/AlgorandWalletContext";
-
-const features = [
-  {
-    title: "Real-Time Tracking",
-    description: "Scan thousands of liquidity pools across multiple chains with zero latency.",
-    icon: Activity
-  },
-  {
-    title: "Smart Execution",
-    description: "Multi-layered logic ensures profitable trades before executing.",
-    icon: Zap
-  },
-  {
-    title: "Predictive Analytics",
-    description: "Anticipate market movements and impermanent loss using advanced ML.",
-    icon: LineChart
-  },
-  {
-    title: "Cross-Chain Flow",
-    description: "Bridge assets instantaneously via Aptos, Algorand, and Solana.",
-    icon: Globe
-  },
-  {
-    title: "Secure Enclaves",
-    description: "Vault integration with military-grade encryption for all stored keys.",
-    icon: Shield
-  },
-  {
-    title: "DeFi Abstraction",
-    description: "Interact with complex protocols through a completely unified interface.",
-    icon: Layers
-  }
-];
+import { useState } from "react";
 
 const Index = () => {
   const navigate = useNavigate();
   const { connected } = useAlgorandWallet();
+  const [showWalletPrompt, setShowWalletPrompt] = useState(false);
 
   const handleConnect = () => {
-    navigate('/dashboard');
+    if (connected) {
+      navigate("/dashboard");
+    } else {
+      setShowWalletPrompt(true);
+    }
   };
 
-  return (
-    <div className="min-h-screen bg-background text-foreground dark">
-      <Navbar />
-      <HeroSection />
-      
-      {/* Connected Wallets */}
-      <section className="py-8 border-y border-white/5 relative z-10 bg-background/60 backdrop-blur-xl">
-        <div className="container mx-auto px-6 mb-6">
-          <p className="text-center text-xs font-semibold text-primary uppercase tracking-[0.3em] font-mono">Connected Wallets</p>
-        </div>
-        
-        <div className="relative w-full">
-          <LogoLoop
-            logos={[
-              { title: "PERA" },
-              { title: "LUTE" },
-              { title: "DEFLY" },
-              { title: "ALGORAND" },
-              { title: "SORA" },
-              { title: "PERA" },
-              { title: "LUTE" }
-            ]}
-            speed={40}
-            direction="left"
-            logoHeight={40}
-            gap={100}
-            scaleOnHover
-            fadeOut
-            fadeOutColor="var(--background)"
-            ariaLabel="Connected Wallets"
-          />
-        </div>
-      </section>
+  const handleCloseWalletPrompt = () => {
+    setShowWalletPrompt(false);
+  };
 
-      {/* Hero Section with Chart */}
-      <section className="py-24 relative overflow-hidden">
+  // Low-brightness animated background component (matches Vault.tsx style)
+  const AnimatedBackground = () => (
+    <div className="fixed inset-0 pointer-events-none">
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/[0.07] rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/[0.07] rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-primary/[0.03] to-orange-500/[0.03] rounded-full blur-3xl" />
+    </div>
+  );
+
+  const features = [
+    {
+      icon: Bot,
+      title: "AUTONOMOUS AGENTS",
+      description: "AI agents continuously monitor market prices, analyze execution conditions, and autonomously execute trades",
+      badge: "ALWAYS ON",
+      badgeColor: "green" as const,
+    },
+    {
+      icon: Shield,
+      title: "LOW RISK EXECUTION",
+      description: "Risk-assessed strategies with built-in safety limits and MEV protection.",
+      badge: "RISK SCORE: 2.3/10",
+      badgeColor: "green" as const,
+    },
+    {
+      icon: Target,
+      title: "HIGH SUCCESS RATE",
+      description: "92.7% profitable trades over 30 days with advanced opportunity detection.",
+      badge: "1,247 TRADES",
+      badgeColor: "blue" as const,
+    },
+    {
+      icon: TrendingUp,
+      title: "MAXIMUM PROFITABILITY",
+      description: "Attain maximum profit per trade, compounded automatically across DEXs.",
+      badge: "+$47,332 TOTAL",
+      badgeColor: "green" as const,
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-background noise-overlay dark relative overflow-hidden">
+      {/* Low-brightness animated background */}
+      <AnimatedBackground />
+
+      <Header />
+
+      {/* Hero Section */}
+      <section className="relative pt-28 pb-20 lg:pt-36 lg:pb-32">
         <div className="container relative z-10 mx-auto px-4 lg:px-8">
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
             {/* Left: Hero Content */}
@@ -102,17 +88,17 @@ const Index = () => {
                   <Radio className="h-3 w-3 mt-auto text-primary animate-pulse " />
                   <span className="text-sm font-display font-bold text-primary">CURRENTLY ON ALGORAND TESTNET</span>
                 </div>
-                
+
                 <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-none tracking-wide mb-6 text-gradient-hero">
                   AGENTIC<br />
                   ARBITRAGE<br />
                   PLATFORM
                 </h1>
-                
+
                 <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-lg">
                   Execute autonomous arbitrage agents that continuously scan Algorand DEXs, monitor prices, simulate execution paths, and automatically execute profitable trades using smart contracts.
                 </p>
-                
+
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button variant="hero" size="lg" onClick={handleConnect}>
                     {connected ? 'Launch App' : 'Connect Wallet'}
@@ -120,7 +106,7 @@ const Index = () => {
                   </Button>
                 </div>
               </motion.div>
-              
+
               {/* Feature Cards Grid */}
               <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {features.map((feature, index) => (
@@ -132,11 +118,11 @@ const Index = () => {
                 ))}
               </div>
             </div>
-            
+
             {/* Right: Price Chart */}
             <div className="lg:pl-8">
               <PriceChart />
-              
+
               {/* Additional Info Cards */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -160,59 +146,67 @@ const Index = () => {
         </div>
       </section>
 
-    
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 z-0 opacity-40">
-          <ShapeGrid 
-            speed={0}
-            squareSize={77}
-            direction="diagonal"
-            borderColor="#271E37"
-            hoverFillColor="#222222"
-            shape="square"
-            hoverTrailAmount={0}
-          />
-        </div>
-        
-        {/* Purple glow orbs */}
-        <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] rounded-full bg-primary/8 blur-[120px] pointer-events-none z-0" />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full bg-primary/5 blur-[100px] pointer-events-none z-0" />
-
-        <div className="container mx-auto px-6 relative z-10">
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
+      {/* Features Section */}
+      <section className="py-20 border-t border-border">
+        <div className="container mx-auto px-4 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-5xl font-hero tracking-tight text-foreground mb-4">Unmatched Capability</h2>
+            <h2 className="font-display text-4xl lg:text-5xl font-bold tracking-wide mb-4 text-foreground">
+              A LOOK INSIDE THE ENGINE
+            </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Equipped with enterprise-grade infrastructure to dominate the decentralized markets.
+              Our architecture separates private computation from public settlement,
+              giving you the best of both worlds.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {features.map((feature, index) => (
-              <PremiumCard 
-                key={index}
-                delay={0.1 * index}
-                className="hover:shadow-[0_20px_40px_-15px_rgba(var(--primary),0.4)]"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                icon: Shield,
+                title: "CONFIDENTIAL COMPUTE",
+                description: "Your logic runs inside browser environment. No one sees your strategy, inputs, or state.",
+              },
+              {
+                icon: Target,
+                title: "ZK PROOF GENERATION",
+                description: "A cryptographic proof is generated, confirming your logic executed correctly without revealing it.",
+              },
+              {
+                icon: Zap,
+                title: "MEV RESISTANCE",
+                description: "Transactions are sent via private mempool, protecting you from sandwich attacks.",
+              },
+              {
+                icon: Bot,
+                title: "NON-CUSTODIAL",
+                description: "You retain full control of your assets. On-chain contracts verify proofs, settling trades trustlessly.",
+              },
+            ].map((item, index) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="group rounded-xl border border-border bg-background/30 backdrop-blur-sm p-6 hover:border-primary/50 transition-all duration-300"
               >
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">
-                  <feature.icon className="w-6 h-6 text-primary" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 mb-4">
+                  <item.icon className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold mb-3 text-foreground tracking-tight">{feature.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  {feature.description}
-                </p>
-              </PremiumCard>
+                <h3 className="font-display text-lg font-bold tracking-wide text-foreground mb-2">{item.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      
       {/* CTA Section */}
       <section className="py-20 border-t border-border">
         <div className="container mx-auto px-4 lg:px-8">
@@ -230,10 +224,10 @@ const Index = () => {
                 START TRADING WITH AI
               </h2>
               <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-                Connect your Petra wallet and deploy your first autonomous trading agent in minutes.
+                Connect your Algorand wallet and deploy your first autonomous trading agent in minutes.
               </p>
               <Button variant="hero" size="lg" onClick={handleConnect} className="font-display tracking-wide font-bold">
-                {connected ? 'Launch App' : 'Connect Petra Wallet'}
+                {connected ? 'Launch App' : 'Connect Algorand Wallet'}
                 <ArrowRight className="h-5 w-5" />
               </Button>
               <p className="text-sm text-muted-foreground mt-4">No trading fees for first 30 days</p>
@@ -241,7 +235,7 @@ const Index = () => {
           </motion.div>
         </div>
       </section>
-      
+
       {/* Footer */}
       <footer className="py-8 border-t border-border">
         <div className="container mx-auto px-4 lg:px-8">
@@ -257,8 +251,24 @@ const Index = () => {
         </div>
       </footer>
 
-      {/* How It Works Timeline */}
-      <HowItWorks />
+      {/* Wallet Connection Modal */}
+      {showWalletPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="relative max-w-md w-full">
+            <button
+              onClick={handleCloseWalletPrompt}
+              className="absolute -top-2 -right-2 z-10 h-8 w-8 rounded-full bg-background border border-border flex items-center justify-center hover:bg-muted transition-colors"
+            >
+              ×
+            </button>
+            <WalletConnectionPrompt
+              title="Connect to Start Trading"
+              description="Connect your Algorand wallet to access the dashboard and start deploying autonomous trading agents."
+              targetRoute="/dashboard"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
