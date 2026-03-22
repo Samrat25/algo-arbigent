@@ -37,7 +37,8 @@ class MarketDataAgent(BaseAgent):
             "dexscreener": "https://api.dexscreener.com/latest/dex/search/?q=ALGO",
             "coingecko_defi": "https://api.coingecko.com/api/v3/coins/algorand",
             "coinmarketcap": "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=ALGO",  # Free tier
-            "messari": "https://data.messari.io/api/v1/assets/algorand/metrics"  # Free tier
+            "messari": "https://data.messari.io/api/v1/assets/algorand/metrics",  # Free tier
+            "llama_fees": "https://api.llama.fi/overview/fees?chain=Algorand"
         }
         
         # Fallback data for Algorand tokens (without total_liquidity)
@@ -77,10 +78,11 @@ class MarketDataAgent(BaseAgent):
             price_task = self._fetch_token_prices()
             gas_task = self._fetch_gas_fees()
             defi_task = self._fetch_defi_data()
+            dex_fees_task = self._fetch_dynamic_dex_fees()
             
             # Execute all tasks concurrently with 5-second timeout
-            price_data, gas_data, defi_data = await asyncio.wait_for(
-                asyncio.gather(price_task, gas_task, defi_task, return_exceptions=True),
+            price_data, gas_data, defi_data, dex_fees_data = await asyncio.wait_for(
+                asyncio.gather(price_task, gas_task, defi_task, dex_fees_task, return_exceptions=True),
                 timeout=5.0
             )
             
@@ -90,7 +92,8 @@ class MarketDataAgent(BaseAgent):
             data_sources = {
                 "price_source": "live" if isinstance(price_data, dict) and price_data.get("source") != "fallback" else "fallback",
                 "gas_source": "live" if isinstance(gas_data, dict) and gas_data.get("source") != "fallback" else "fallback", 
-                "defi_source": "live" if isinstance(defi_data, dict) and defi_data.get("source") != "fallback" else "fallback"
+                "defi_source": "live" if isinstance(defi_data, dict) and defi_data.get("source") != "fallback" else "fallback",
+                "dex_fees_source": "live" if isinstance(dex_fees_data, dict) and dex_fees_data.get("source") != "fallback" else "fallback"
             }
             
             # Build response with live or mixed data
@@ -99,6 +102,7 @@ class MarketDataAgent(BaseAgent):
                 "timestamp": datetime.utcnow().isoformat() + "Z",
                 "base_currency": "usd",
                 "chains": self._build_chains_data(price_data, gas_data, defi_data),
+                "dynamic_dex_fees": dex_fees_data.get("dex_fees", {}) if isinstance(dex_fees_data, dict) else {},
                 "fetch_time_seconds": round(elapsed, 3),
                 "data_sources": data_sources
             }
@@ -127,6 +131,43 @@ class MarketDataAgent(BaseAgent):
             else:
                 # No cached data available, use fallback
                 return self._get_fallback_response()
+    
+    async def _fetch_dynamic_dex_fees(self) -> Dict[str, Any]:
+        """Fetch dynamic DEX fees from DefiLlama overview/fees"""
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    self.defi_apis["llama_fees"],
+                    timeout=aiohttp.ClientTimeout(total=4)
+                ) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        protocols = data.get("protocols", [])
+                        
+                        algorand_dexs = {}
+                        for p in protocols:
+                            name = p.get("module", p.get("name", "")).lower()
+                            total24h = p.get("total24h", 0)
+                            
+                            # Only include actual data to prevent 0 mapping
+                            if total24h and total24h > 0:
+                                algorand_dexs[name] = {
+                                    "name": p.get("name"),
+                                    "total24h_usd": total24h,
+                                    "total7d_usd": p.get("total7d", 0)
+                                }
+                        
+                        print(f"✅ DefiLlama Dynamic DEX fees fetched: {len(algorand_dexs)} protocols")
+                        return {
+                            "source": "llama_fees_live",
+                            "dex_fees": algorand_dexs
+                        }
+                    else:
+                        print(f"⚠️ DefiLlama fees API returned {response.status}")
+                        raise Exception(f"DefiLlama fees API returned {response.status}")
+        except Exception as e:
+            print(f"❌ Dynamic DEX fees fetch failed: {e}")
+            return {"source": "fallback", "dex_fees": {}}
                 
         except Exception as e:
             elapsed = time.time() - start_time
