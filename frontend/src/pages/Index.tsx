@@ -73,7 +73,11 @@ const Index = () => {
             fadeOutColor="var(--background)"
             ariaLabel="Connected Wallets"
           />
+        </div>
+      </section>
 
+      {/* Hero Section */}
+      <section className="py-20 relative overflow-hidden">
         <div className="container relative z-10 mx-auto px-4 lg:px-8">
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
             {/* Left: Hero Content */}
