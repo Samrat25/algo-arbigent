@@ -1,9 +1,26 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, LayoutDashboard, Radio } from "lucide-react";
 import PriceChart from "./PriceChart";
 import ShapeGrid from "@/components/ShapeGrid";
+import { useState } from "react";
+import { useAlgorandWallet } from "@/contexts/AlgorandWalletContext";
+import { WalletModal } from "./WalletModal";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
 const HeroSection = () => {
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const { connected } = useAlgorandWallet();
+  const navigate = useNavigate();
+
+  const handleCtaClick = () => {
+    if (connected) {
+      navigate('/dashboard');
+    } else {
+      setIsWalletModalOpen(true);
+    }
+  };
+
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
       {/* ShapeGrid Background */}
@@ -27,71 +44,72 @@ const HeroSection = () => {
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
           {/* Left content */}
           <div className="flex-1 max-w-xl pt-16">
-            <h1
-              className="font-hero text-5xl md:text-6xl lg:text-7xl leading-[1.05] tracking-tight text-foreground mb-6 text-balance opacity-0 animate-fade-up"
-              style={{ animationDelay: "0.1s" }}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
             >
-              Gain Clarity Take Control Grow
-            </h1>
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 mb-6">
+                <Radio className="h-3 w-3 text-primary animate-pulse" />
+                <span className="text-sm font-hero font-bold text-primary">CURRENTLY ON ALGORAND TESTNET</span>
+              </div>
+              
+              <h1 className="font-hero text-5xl md:text-6xl lg:text-7xl leading-[1.05] tracking-tight text-foreground mb-6 text-balance">
+                AGENTIC <span className="text-primary">ARBITRAGE</span> PLATFORM
+              </h1>
 
-            <p
-              className="text-base md:text-lg text-muted-foreground max-w-md mb-10 leading-relaxed opacity-0 animate-fade-up"
-              style={{ animationDelay: "0.2s" }}
-            >
-              A powerful crypto SaaS platform designed to help you launch,
-              manage, and scale digital assets and blockchain-based financial
-              tools securely and efficiently.
-            </p>
+              <p className="text-base md:text-lg text-muted-foreground max-w-md mb-10 leading-relaxed font-medium">
+                Execute autonomous arbitrage agents that continuously scan Algorand DEXs, monitor prices, and automatically execute profitable trades via secure smart contracts.
+              </p>
 
-            <div
-              className="flex flex-wrap gap-4 mb-16 opacity-0 animate-fade-up"
-              style={{ animationDelay: "0.3s" }}
-            >
-              <Button variant="hero" size="lg">
-                Connect Wallet <ArrowRight className="ml-1 w-4 h-4" />
-              </Button>
-              <Button variant="heroOutline" size="lg">
-                Learn More
-              </Button>
-            </div>
+              <div className="flex flex-wrap gap-4 mb-16">
+                <Button 
+                  variant="hero" 
+                  size="xl"
+                  onClick={handleCtaClick}
+                  className="font-hero px-8 py-7 text-lg rounded-2xl shadow-[0_0_20px_rgba(var(--primary),0.3)] transition-all hover:scale-105"
+                >
+                  {connected ? (
+                    <>Go to Command Center <LayoutDashboard className="ml-2 w-5 h-5" /></>
+                  ) : (
+                    <>Connect Algorand Wallet <ArrowRight className="ml-2 w-5 h-5" /></>
+                  )}
+                </Button>
+                <Button variant="heroOutline" size="xl" className="font-hero px-8 py-7 text-lg rounded-2xl border-white/10 hover:bg-white/5 transition-all">
+                  Documentation
+                </Button>
+              </div>
 
-            {/* Stats */}
-            <div
-              className="flex items-center gap-8 opacity-0 animate-fade-up"
-              style={{ animationDelay: "0.45s" }}
-            >
-              <div className="flex -space-x-2">
-                {["🧑‍💼", "👩‍💻", "🧑‍🎨"].map((emoji, i) => (
-                  <div
-                    key={i}
-                    className="w-10 h-10 rounded-full bg-secondary border-2 border-background flex items-center justify-center text-lg"
-                  >
-                    {emoji}
+              {/* Stats */}
+              <div className="flex items-center gap-8">
+                <div className="flex items-center gap-6">
+                  <div>
+                    <div className="text-2xl font-bold text-foreground">99.9%</div>
+                    <div className="text-xs text-muted-foreground font-hero uppercase tracking-widest font-bold">Uptime</div>
                   </div>
-                ))}
-              </div>
-              <div className="flex items-center gap-6">
-                <div>
-                  <div className="text-2xl font-bold text-foreground">99.9%</div>
-                  <div className="text-xs text-muted-foreground">Uptime</div>
-                </div>
-                <div className="w-px h-8 bg-border" />
-                <div>
-                  <div className="text-2xl font-bold text-foreground">400k+</div>
-                  <div className="text-xs text-muted-foreground">Active Users</div>
+                  <div className="w-px h-8 bg-white/10" />
+                  <div>
+                    <div className="text-2xl font-bold text-foreground">40k+</div>
+                    <div className="text-xs text-muted-foreground font-hero uppercase tracking-widest font-bold">Trades Daily</div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
 
-          {/* Right dashboard */}
+          {/* Right Price Chart */}
           <div className="flex-1 flex justify-center lg:justify-end w-full">
-            <div className="w-full max-w-2xl">
-              <PriceChart />
+            <div className="w-full max-w-2xl bg-black/40 backdrop-blur-xl rounded-3xl border border-white/10 p-2 shadow-2xl overflow-hidden">
+               <PriceChart />
             </div>
           </div>
         </div>
       </div>
+      
+      <WalletModal 
+        open={isWalletModalOpen} 
+        onOpenChange={setIsWalletModalOpen}
+      />
     </section>
   );
 };

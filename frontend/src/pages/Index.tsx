@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import PriceChart from "@/components/PriceChart";
@@ -5,8 +6,9 @@ import LogoLoop from "@/components/LogoLoop";
 import ShapeGrid from "@/components/ShapeGrid";
 import PremiumCard from "@/components/PremiumCard";
 import HowItWorks from "@/components/HowItWorks";
-import { Activity, Zap, LineChart, Globe, Shield, Layers } from "lucide-react";
+import { Activity, Zap, LineChart, Globe, Shield, Layers, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAlgorandWallet } from "@/contexts/AlgorandWalletContext";
 
 const features = [
   {
@@ -42,6 +44,8 @@ const features = [
 ];
 
 const Index = () => {
+  const { connected } = useAlgorandWallet();
+
   return (
     <div className="min-h-screen bg-background text-foreground dark">
       <Navbar />
@@ -53,7 +57,6 @@ const Index = () => {
           <p className="text-center text-xs font-semibold text-primary uppercase tracking-[0.3em] font-mono">Connected Wallets</p>
         </div>
         
- main
         <div className="relative w-full">
           <LogoLoop
             logos={[
@@ -74,76 +77,6 @@ const Index = () => {
             fadeOutColor="var(--background)"
             ariaLabel="Connected Wallets"
           />
-
-        <div className="container relative z-10 mx-auto px-4 lg:px-8">
-          <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
-            {/* Left: Hero Content */}
-            <div className="max-w-2xl">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-              >
-                <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 mb-6">
-                  <Radio className="h-3 w-3 mt-auto text-primary animate-pulse " />
-                  <span className="text-sm font-display font-bold text-primary">CURRENTLY ON ALGORAND TESTNET</span>
-                </div>
-                
-                <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-none tracking-wide mb-6 text-gradient-hero">
-                  AGENTIC<br />
-                  ARBITRAGE<br />
-                  PLATFORM
-                </h1>
-                
-                <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-lg">
-                  Execute autonomous arbitrage agents that continuously scan Algorand DEXs, monitor prices, simulate execution paths, and automatically execute profitable trades using smart contracts.
-                </p>
-                
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Button variant="hero" size="xl" onClick={handleConnect}>
-                    {connected ? 'Launch App' : 'Connect Wallet'}
-                    <ArrowRight className="h-5 w-5" />
-                  </Button>
-                </div>
-              </motion.div>
-              
-              {/* Feature Cards Grid */}
-              <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {features.map((feature, index) => (
-                  <FeatureCard
-                    key={feature.title}
-                    {...feature}
-                    delay={0.2 + index * 0.1}
-                  />
-                ))}
-              </div>
-            </div>
-            
-            {/* Right: Price Chart */}
-            <div className="lg:pl-8">
-              <PriceChart />
-              
-              {/* Additional Info Cards */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                className="mt-6 grid grid-cols-2 gap-4"
-              >
-                <div className="rounded-xl border border-border bg-background/50 backdrop-blur-sm p-4">
-                  <p className="text-xs text-muted-foreground mb-1 font-display">Active Arbitrage Routes</p>
-                  <p className="font-mono text-xl font-bold text-foreground">47</p>
-                  <p className="text-xs text-success mt-1">+12 new today</p>
-                </div>
-                <div className="rounded-xl border border-border bg-background/50 backdrop-blur-sm p-4">
-                  <p className="text-xs text-muted-foreground mb-1 font-display">Total Value Locked</p>
-                  <p className="font-mono text-xl font-bold text-foreground">$2.4M</p>
-                  <p className="text-xs text-success mt-1">+8.3% this week</p>
-                </div>
-              </motion.div>
-            </div>
-          </div>
- main
         </div>
       </section>
 
@@ -199,56 +132,33 @@ const Index = () => {
           </div>
         </div>
       </section>
-main
-
-      
-      {/* CTA Section */}
-      <section className="py-20 border-t border-border">
-        <div className="container mx-auto px-4 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-secondary/10 p-12 text-center"
-          >
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent" />
-            
-            <div className="relative z-10">
-              <h2 className="font-display text-4xl lg:text-5xl font-bold tracking-wide mb-4 text-foreground">
-                START TRADING WITH AI
-              </h2>
-              <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-                Connect your Petra wallet and deploy your first autonomous trading agent in minutes.
-              </p>
-              <Button variant="glow" size="xl" onClick={handleConnect} className="font-display tracking-wide font-bold">
-                {connected ? 'Launch App' : 'Connect Petra Wallet'}
-                <ArrowRight className="h-5 w-5" />
-              </Button>
-              <p className="text-sm text-muted-foreground mt-4">No trading fees for first 30 days</p>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-      
-      {/* Footer */}
-      <footer className="py-8 border-t border-border">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <span className="font-display text-lg font-bold tracking-wide">ARBIGENT</span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              © 2025 Arbigent. Built on Algorand.
-            </p>
-          </div>
-        </div>
-      </footer>
- main
 
       {/* How It Works Timeline */}
       <HowItWorks />
+      
+      {/* Footer */}
+      <footer className="py-12 border-t border-white/5 relative z-10 bg-background">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-black font-bold shadow-[0_0_15px_rgba(255,138,0,0.5)]">
+                A
+              </div>
+              <span className="font-hero text-xl font-bold tracking-tight text-foreground">ArbiGent</span>
+            </div>
+            
+            <p className="text-sm text-muted-foreground">
+              © 2025 ArbiGent. Built on Algorand. All rights reserved.
+            </p>
+            
+            <div className="flex items-center gap-6">
+              <a href="#" className="text-muted-foreground hover:text-primary transition-colors text-sm uppercase tracking-widest font-bold">Twitter</a>
+              <a href="#" className="text-muted-foreground hover:text-primary transition-colors text-sm uppercase tracking-widest font-bold">Discord</a>
+              <a href="#" className="text-muted-foreground hover:text-primary transition-colors text-sm uppercase tracking-widest font-bold">Docs</a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

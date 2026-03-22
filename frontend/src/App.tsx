@@ -14,6 +14,7 @@ import Agents from "./pages/Agents";
 import ApiEndpoints from "./pages/ApiEndpoints";
 import Pricing from "./pages/Pricing";
 import FAQ from "./pages/FAQ";
+import History from "./pages/History";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Agents />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/history" 
+                element={
+                  <ProtectedRoute>
+                    <History />
                   </ProtectedRoute>
                 } 
               />
