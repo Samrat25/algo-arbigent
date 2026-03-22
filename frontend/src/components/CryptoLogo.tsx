@@ -1,5 +1,5 @@
 interface CryptoLogoProps {
-  symbol: "ALGO" | "USDC" | "USDT";
+  symbol: "APT" | "USDC" | "USDT";
   size?: "sm" | "md" | "lg";
   className?: string;
 }

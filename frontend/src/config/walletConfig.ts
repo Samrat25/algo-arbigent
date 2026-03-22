@@ -109,5 +109,5 @@ export function isWalletInstalled(walletId: string): boolean {
  */
 export const API_CONFIG = {
   backendUrl: import.meta.env.VITE_API_URL || 'http://localhost:3001',
-  arbitrageApiUrl: import.meta.env.VITE_ARBITRAGE_API_URL || 'http://localhost:8000'
+  arbitrageApiUrl: import.meta.env.VITE_ARBITRAGE_API_URL || 'https://api.arbigent.com'
 };

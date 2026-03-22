@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useWallet } from '@txnlab/use-wallet-react';
 import algosdk from 'algosdk';
-import { API_CONFIG } from '@/config/walletConfig';
 
 // Token balance interface
 interface TokenBalances {
@@ -278,28 +277,7 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       
       // Send all transactions as a group
       const signedTxnBytes = signedTxns.filter(txn => txn !== null);
-      const txResult = await algodClient.sendRawTransaction(signedTxnBytes).do();
-      
-      // Wait for confirmation
-      await algosdk.waitForConfirmation(algodClient, txResult.txId, 4);
-      
-      console.log(`✅ Deposited ${amount} ALGO to vault - TxID: ${txResult.txId}`);
-
-      // Log transaction to backend
-      try {
-        await fetch(`${API_CONFIG.backendUrl}/vault/deposit`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            walletAddress: account.address,
-            coinSymbol: 'ALGO',
-            amount: amountMicroAlgo.toString(),
-            transactionHash: txResult.txId
-          })
-        });
-      } catch (logError) {
-        console.error('Failed to log transaction:', logError);
-      }
+      await algodClient.sendRawTransaction(signedTxnBytes).do();
 
       await refreshBalances();
       return true;
@@ -363,23 +341,7 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       // Wait for confirmation
       await algosdk.waitForConfirmation(algodClient, txResult.txId, 4);
 
-      console.log(`✅ Deposited ${amount} ${token} to vault - TxID: ${txResult.txId}`);
-
-      // Log transaction to backend
-      try {
-        await fetch(`${API_CONFIG.backendUrl}/vault/deposit`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            walletAddress: account.address,
-            coinSymbol: token,
-            amount: amountMicro.toString(),
-            transactionHash: txResult.txId
-          })
-        });
-      } catch (logError) {
-        console.error('Failed to log transaction:', logError);
-      }
+      console.log(`✅ Deposited ${amount} ${token} to vault`);
 
       await refreshBalances();
       return true;
@@ -426,28 +388,7 @@ export const AlgorandWalletProvider: React.FC<AlgorandWalletProviderProps> = ({ 
       const signedTxns = await signTransactions([encodedTxn]);
       
       if (signedTxns[0]) {
-        const txResult = await algodClient.sendRawTransaction(signedTxns[0]).do();
-        
-        // Wait for confirmation
-        await algosdk.waitForConfirmation(algodClient, txResult.txId, 4);
-        
-        console.log(`✅ Withdrew ${amount} ${sourceToken} from vault - TxID: ${txResult.txId}`);
-        
-        // Log transaction to backend
-        try {
-          await fetch(`${API_CONFIG.backendUrl}/vault/withdraw`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              walletAddress: account.address,
-              coinSymbol: sourceToken,
-              amount: amountMicro.toString(),
-              transactionHash: txResult.txId
-            })
-          });
-        } catch (logError) {
-          console.error('Failed to log transaction:', logError);
-        }
+        await algodClient.sendRawTransaction(signedTxns[0]).do();
       }
 
       await refreshBalances();
