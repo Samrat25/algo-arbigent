@@ -364,7 +364,8 @@ async def get_arbitrage_charges(request: ArbitrageChargesRequest):
             "trade_amount": trade_amount,
             "current_prices": custom_prices,
             "custom_dex_fees": dex_fees,
-            "algo_price": algo_price  # Pass consistent ALGO price to agent
+            "algo_price": algo_price,  # Pass consistent ALGO price to agent
+            "dynamic_dex_fees": market_data.get("dynamic_dex_fees", {})
         }
         
         # Execute with timeout using the appropriate agent
@@ -438,7 +439,8 @@ async def is_arbitrage_profitable(request: ArbitrageProfitableRequest):
                 "trade_amount": trade_amount,
                 "current_prices": custom_prices,
                 "custom_dex_fees": dex_fees,
-                "algo_price": algo_price  # Pass consistent ALGO price to agent
+                "algo_price": algo_price,  # Pass consistent ALGO price to agent
+                "dynamic_dex_fees": market_data.get("dynamic_dex_fees", {})
             }
             
             # Execute with timeout using the appropriate agent
@@ -495,7 +497,8 @@ async def find_arbitrage_possibilities(request: ArbitragePossibilitiesRequest):
             "trade_amount": trade_amount,
             "current_prices": custom_prices,
             "custom_dex_fees": dex_fees,
-            "algo_price": algo_price  # Pass consistent ALGO price to agent
+            "algo_price": algo_price,  # Pass consistent ALGO price to agent
+            "dynamic_dex_fees": market_data.get("dynamic_dex_fees", {})
         }
         
         # Execute with timeout using the appropriate agent
@@ -540,7 +543,8 @@ async def optimize_investment(request: InvestmentOptimizationRequest):
             "max_investment_algo": request.max_investment_algo,
             "current_prices": custom_prices,
             "dex_fees": dex_fees,
-            "algo_price": algo_price  # Pass live ALGO price to optimizer
+            "algo_price": algo_price,  # Pass live ALGO price to optimizer
+            "dynamic_dex_fees": market_data.get("dynamic_dex_fees", {})
         }
         
         result = await execute_with_timeout(

@@ -1,3 +1,5 @@
+feature/vault-balance-display-and-fixes
+
 # Algorand Arbitrage API Dependencies
 
 # FastAPI and server

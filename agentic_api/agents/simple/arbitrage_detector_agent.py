@@ -90,6 +90,9 @@ class ArbitrageDetectorAgent(BaseAgent):
             if "algo_price" in input_data:
                 self.current_prices["algo"] = float(input_data["algo_price"])
             
+            # Save dynamic dex fees state for calculations
+            self.current_dynamic_dex_fees = input_data.get("dynamic_dex_fees", {})
+            
             # Fetch live gas price for accurate calculations
             await self._fetch_live_gas_price()
             
@@ -438,12 +441,27 @@ class ArbitrageDetectorAgent(BaseAgent):
             "humbleswap": 0.998
         }
         
+        dynamic_dex_fees = getattr(self, "current_dynamic_dex_fees", {})
+        
         # Generate a deterministic factor for unknown DEXes
         def get_factor(dex_name: str) -> float:
-            if dex_name in dex_price_factors:
-                return dex_price_factors[dex_name]
+            dex_lower = dex_name.lower()
+            
+            # Utilize dynamic DefiLlama fees to scale pricing accuracy
+            if dex_lower in dynamic_dex_fees:
+                fee_24h = dynamic_dex_fees[dex_lower].get("total24h_usd", 0)
+                if fee_24h > 10000:
+                    return 1.000  # High volume = excellent pricing peg
+                elif fee_24h > 1000:
+                    return 1.001  # Medium volume = slight deviation
+                elif fee_24h > 0:
+                    return 1.003  # Low volume = larger deviation
+                    
+            if dex_lower in dex_price_factors:
+                return dex_price_factors[dex_lower]
+                
             # Create deterministic variation based on DEX name characters
-            hash_val = sum(ord(c) * (i + 1) for i, c in enumerate(dex_name.lower()))
+            hash_val = sum(ord(c) * (i + 1) for i, c in enumerate(dex_lower))
             return 1.0 + ((hash_val % 100) - 50) / 10000.0  # +/- 0.005 variation
             
         from_factor = get_factor(from_dex)
