@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Download, Upload, Wallet, CheckCircle, AlertCircle, RefreshCw, Sparkles, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Download, Upload, Wallet, CheckCircle, AlertCircle, RefreshCw, Sparkles, ShieldCheck, ExternalLink, Clock } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import ShapeGrid from "@/components/ShapeGrid";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import CryptoLogo from "@/components/CryptoLogo";
+import { API_CONFIG } from '@/config/walletConfig';
 
 const USDC_ASSET_ID = parseInt(import.meta.env.VITE_USDC_ASSET_ID || '0');
 const USDT_ASSET_ID = parseInt(import.meta.env.VITE_USDT_ASSET_ID || '0');
@@ -34,6 +35,17 @@ const GlobalBackground = () => (
   </div>
 );
 
+interface Transaction {
+  _id: string;
+  transactionHash: string;
+  type: string;
+  status: string;
+  coinSymbol: string;
+  amountFormatted: number;
+  timestamp: string;
+  createdAt?: string;
+}
+
 const Vault = () => {
   const { account, connected, balances, smartContract } = useAlgorandWallet();
   const { vault, isLoading: vaultLoading, refreshVault, getFormattedBalance } = useVault();
@@ -42,50 +54,34 @@ const Vault = () => {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [showOptInSection, setShowOptInSection] = useState(true);
   const [optInSuccess, setOptInSuccess] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
+
+  // Fetch transaction history
+  const fetchTransactions = async () => {
+    if (!account?.address) return;
+    
+    setLoadingTransactions(true);
+    try {
+      const response = await fetch(`${API_CONFIG.backendUrl}/transactions/${account.address}?limit=10`);
+      if (response.ok) {
+        const data = await response.json();
+        setTransactions(data.transactions || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch transactions:', error);
+    } finally {
+      setLoadingTransactions(false);
+    }
+  };
 
   // Refresh vault on mount and after transactions
   useEffect(() => {
     if (connected && account?.address) {
       refreshVault();
+      fetchTransactions();
     }
   }, [connected, account?.address, refreshVault]);
-
-  const handleOptIn = async (type: 'USDC' | 'USDT' | 'VAULT') => {
-    setOptInSuccess(null);
-    smartContract.clearError(); // Clear any previous errors
-    let success = false;
-    
-    if (type === 'VAULT') {
-      success = await smartContract.optInToApp();
-      if (success) {
-        const msg = smartContract.error?.includes('Already') 
-          ? 'Already opted into Vault!' 
-          : 'Successfully opted into Vault!';
-        setOptInSuccess(msg);
-        smartContract.clearError(); // Clear the "already opted in" error
-      }
-    } else {
-      const assetId = type === 'USDC' ? USDC_ASSET_ID : USDT_ASSET_ID;
-      success = await smartContract.optInToAsset(assetId, type);
-      if (success) {
-        const msg = smartContract.error?.includes('Already')
-          ? `Already opted into ${type}!`
-          : `Successfully opted into ${type}!`;
-        setOptInSuccess(msg);
-        smartContract.clearError(); // Clear the "already opted in" error
-      }
-    }
-    
-    if (success) {
-      setTimeout(() => setOptInSuccess(null), 3000);
-    }
-  };
-
-  const supportedTokens = [
-    { symbol: "ALGO" as const, name: "Algorand" },
-    { symbol: "USDC" as const, name: "USD Coin" },
-    { symbol: "USDT" as const, name: "Tether USD" },
-  ];
 
   const handleDeposit = async () => {
     if (!depositAmount || smartContract.isProcessing) return;
@@ -100,8 +96,11 @@ const Vault = () => {
       
       if (success) {
         setDepositAmount("");
-        // Refresh vault balance after deposit
-        setTimeout(() => refreshVault(), 2000);
+        // Refresh vault balance and transactions after deposit
+        setTimeout(() => {
+          refreshVault();
+          fetchTransactions();
+        }, 2000);
       }
     } catch (err) {
       console.error('Deposit error:', err);
@@ -115,17 +114,52 @@ const Vault = () => {
       const success = await smartContract.withdrawFromVault(withdrawAmount, selectedToken);
       if (success) {
         setWithdrawAmount("");
-        // Refresh vault balance after withdraw
-        setTimeout(() => refreshVault(), 2000);
+        // Refresh vault balance and transactions after withdraw
+        setTimeout(() => {
+          refreshVault();
+          fetchTransactions();
+        }, 2000);
       }
     } catch (err) {
       console.error('Withdraw error:', err);
     }
   };
 
+  const handleOptIn = async (type: 'USDC' | 'USDT' | 'VAULT') => {
+    setOptInSuccess(null);
+    smartContract.clearError();
+    let success = false;
+    
+    if (type === 'VAULT') {
+      success = await smartContract.optInToApp();
+      if (success) {
+        setOptInSuccess('Successfully opted into Vault!');
+      }
+    } else {
+      const assetId = type === 'USDC' ? USDC_ASSET_ID : USDT_ASSET_ID;
+      success = await smartContract.optInToAsset(assetId, type);
+      if (success) {
+        setOptInSuccess(`Successfully opted into ${type}!`);
+      }
+    }
+    
+    if (success) {
+      setTimeout(() => setOptInSuccess(null), 3000);
+    }
+  };
+
+  const handleSetMax = (isDeposit: boolean) => {
+    if (isDeposit) {
+      setDepositAmount(getFormattedBalance(selectedToken, true).split(' ')[0]);
+    } else {
+      setWithdrawAmount(getFormattedBalance(selectedToken).split(' ')[0]);
+    }
+  };
+
   const setPercentage = (percentage: number, isDeposit: boolean) => {
-    const balance = balances[selectedToken] || '0';
-    const amount = (parseFloat(balance) * percentage / 100).toFixed(6);
+    const balanceStr = isDeposit ? getFormattedBalance(selectedToken, true) : getFormattedBalance(selectedToken);
+    const balance = parseFloat(balanceStr.split(' ')[0]) || 0;
+    const amount = (balance * percentage / 100).toFixed(6);
     if (isDeposit) {
       setDepositAmount(amount);
     } else {
@@ -135,308 +169,292 @@ const Vault = () => {
 
   if (!connected) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <Wallet className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <CardTitle>Wallet Not Connected</CardTitle>
-            <CardDescription>Connect your Algorand wallet to access the vault</CardDescription>
-          </CardHeader>
-        </Card>
+      <div className="min-h-screen bg-background text-foreground dark relative overflow-hidden flex flex-col items-center justify-center p-6">
+        <GlobalBackground />
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 text-center max-w-md p-8 rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl"
+        >
+          <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
+            <Wallet className="w-10 h-10 text-primary" />
+          </div>
+          <h1 className="font-hero text-3xl font-bold tracking-tight text-white mb-4 uppercase">Vault Access Locked</h1>
+          <p className="text-muted-foreground mb-8 text-lg">
+            Connect your Algorand wallet to access the secure arbitrage vault and manage your trading capital.
+          </p>
+          <Button variant="glow" size="lg" asChild className="w-full py-6 text-lg font-bold">
+            <Link to="/">Return Home</Link>
+          </Button>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background dark text-foreground relative overflow-hidden selection:bg-primary/30">
+    <div className="min-h-screen bg-background text-foreground dark relative flex flex-col">
       <GlobalBackground />
       <Navbar />
       
-      <main className="pt-32 pb-16 relative z-10">
-        <div className="container mx-auto px-6 lg:px-12 max-w-7xl">
-          <div className="mb-12">
-            <Link to="/dashboard" className="inline-flex items-center text-sm text-primary hover:text-primary/80 transition-colors mb-6 group">
-              <ArrowLeft className="h-4 w-4 mr-2 transition-transform group-hover:-translate-x-1" />
-              BACK TO COMMAND CENTER
-            </Link>
-            <h1 className="font-hero text-4xl lg:text-6xl font-bold tracking-tight text-white mb-4 uppercase">
-              Secure <span className="text-primary glow-text">Vault</span>
-            </h1>
-            <p className="text-muted-foreground text-lg max-w-2xl">Manage your cryptographic assets with institutional-grade security.</p>
-          </div>
+      <main className="flex-grow pt-32 pb-20 px-4 md:px-8 relative z-10">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Left Column: Balances & Actions */}
+          <div className="lg:col-span-2 space-y-8">
+            <header className="mb-8">
+              <Link to="/dashboard" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 mb-4 transition-colors font-bold tracking-wider uppercase text-xs">
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Back to Dashboard
+              </Link>
+              <h1 className="font-hero text-4xl md:text-5xl font-bold tracking-tight text-white">
+                ARBITRAGE <span className="text-primary">VAULT</span>
+              </h1>
+              <p className="text-muted-foreground text-lg max-w-xl">
+                Manage your trading capital. Assets in the vault are used by the ArbiGent engine to execute arbitrage routes.
+              </p>
+            </header>
 
-          {/* Opt-in Section */}
-          {showOptInSection && (
-            <div className="mb-12 rounded-3xl border border-primary/50 bg-primary/5 backdrop-blur-xl p-8 shadow-[0_0_20px_rgba(255,138,0,0.1)] relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -mr-16 -mt-16" />
-              
-              <div className="relative z-10">
-                <h2 className="font-hero text-2xl font-bold tracking-tight text-white mb-2 flex items-center gap-3">
-                  <Sparkles className="h-6 w-6 text-primary animate-pulse" />
-                  INITIAL SETUP REQUIRED
-                </h2>
-                <p className="text-muted-foreground mb-8 text-sm">Activate your secure vault by opting into the required smart contracts and asset types.</p>
-
-                {optInSuccess && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="mb-8 p-4 rounded-xl border border-green-500/30 bg-green-500/10 flex items-center gap-3 text-green-400"
-                  >
-                    <CheckCircle className="h-5 w-5 shrink-0" />
-                    <span className="text-sm font-medium">{optInSuccess}</span>
-                  </motion.div>
-                )}
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                  {[
-                    { id: 'USDC', label: 'Activate USDC' },
-                    { id: 'USDT', label: 'Activate USDT' },
-                    { id: 'VAULT', label: 'Connect Vault' }
-                  ].map((opt) => (
-                    <Button
-                      key={opt.id}
-                      variant="heroOutline"
-                      onClick={() => handleOptIn(opt.id as any)}
-                      disabled={smartContract.isProcessing}
-                      className="w-full py-6"
-                    >
-                      {smartContract.isProcessing ? 'Processing...' : opt.label}
-                    </Button>
-                  ))}
-                </div>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowOptInSection(false)}
-                  className="w-full text-muted-foreground hover:text-white transition-colors uppercase tracking-widest text-[10px] font-bold"
+            {/* Balances Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {["ALGO", "USDC", "USDT"].map((symbol) => (
+                <motion.div 
+                  key={symbol}
+                  whileHover={{ y: -5 }}
+                  className={`p-6 rounded-3xl border ${selectedToken === symbol ? 'border-primary bg-primary/5 shadow-[0_0_30px_rgba(var(--primary),0.1)]' : 'border-white/10 bg-white/5'} transition-all cursor-pointer`}
+                  onClick={() => setSelectedToken(symbol as any)}
                 >
-                  Skip for now
-                </Button>
-              </div>
+                  <div className="flex justify-between items-start mb-4">
+                    <CryptoLogo symbol={symbol} size="md" />
+                    <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest ${selectedToken === symbol ? 'bg-primary text-black' : 'bg-white/10 text-white/40'}`}>
+                      {symbol}
+                    </div>
+                  </div>
+                  <h3 className="text-white/50 text-xs font-bold uppercase tracking-widest mb-1">Vault Balance</h3>
+                  <p className="text-2xl font-mono font-bold text-white mb-2">
+                    {vaultLoading ? "---" : getFormattedBalance(symbol)}
+                  </p>
+                  <div className="text-[10px] text-muted-foreground flex items-center justify-between">
+                    <span>Wallet: {getFormattedBalance(symbol, true).split(' ')[0]}</span>
+                  </div>
+                </motion.div>
+              ))}
             </div>
-          )}
 
-          {smartContract.error && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{smartContract.error}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* Token Selection */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Select Token</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                {supportedTokens.map((token) => (
-                  <Button
-                    key={token.symbol}
-                    variant={selectedToken === token.symbol ? "default" : "outline"}
-                    onClick={() => setSelectedToken(token.symbol)}
-                    className="w-full"
-                  >
-                    {token.symbol}
+            {/* Asset Opt-in Section */}
+            {showOptInSection && (
+              <div className="p-6 rounded-3xl border border-primary/20 bg-primary/5 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4 text-sm text-primary font-bold tracking-wide uppercase">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  Ensure you have opted-in to required assets on Algorand.
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="bg-primary/10 border-primary/40 text-primary font-bold" onClick={() => handleOptIn('USDC')}>
+                    USDC
                   </Button>
-                ))}
+                  <Button variant="outline" size="sm" className="bg-primary/10 border-primary/40 text-primary font-bold" onClick={() => handleOptIn('USDT')}>
+                    USDT
+                  </Button>
+                  <Button variant="outline" size="sm" className="bg-primary/10 border-primary/40 text-primary font-bold" onClick={() => handleOptIn('VAULT')}>
+                    VAULT
+                  </Button>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            )}
+            {optInSuccess && (
+              <Alert className="bg-green-500/10 border-green-500 text-green-500 rounded-2xl">
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>{optInSuccess}</AlertDescription>
+              </Alert>
+            )}
 
-          {/* Balance Display */}
-          <div className="mb-12 rounded-3xl border border-primary bg-black/40 backdrop-blur-xl p-8 shadow-[0_0_20px_rgba(255,138,0,0.15)]">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="font-hero text-2xl font-bold tracking-tight text-white flex items-center gap-3">
-                <Wallet className="h-6 w-6 text-primary" />
-                ASSET OVERVIEW
-              </h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={refreshVault}
-                disabled={vaultLoading}
-                className="text-primary hover:text-primary hover:bg-white/5"
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${vaultLoading ? 'animate-spin' : ''}`} />
-                REFRESH
-              </Button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {supportedTokens.map((token) => {
-                const vaultBalance = getFormattedBalance(token.symbol);
-                const walletBalance = balances[token.symbol] || '0';
-                const isSelected = selectedToken === token.symbol;
-                
-                return (
-                  <motion.div
-                    key={token.symbol}
-                    whileHover={{ y: -5 }}
-                    className={`p-6 rounded-2xl border-2 transition-all duration-300 cursor-pointer relative overflow-hidden group ${
-                      isSelected
-                        ? 'border-primary bg-primary/10 shadow-[0_0_20px_rgba(255,138,0,0.2)]'
-                        : 'border-white/10 bg-white/5 hover:border-primary/50'
-                    }`}
-                    onClick={() => setSelectedToken(token.symbol)}
-                  >
-                    {isSelected && (
-                      <div className="absolute top-3 right-3">
-                        <CheckCircle className="h-5 w-5 text-primary" />
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-4 mb-6 relative z-10">
-                      <CryptoLogo symbol={token.symbol} size="md" />
-                      <div>
-                        <h3 className="font-hero text-xl font-bold text-white tracking-tight">{token.symbol}</h3>
-                        <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">{token.name}</p>
-                      </div>
-                    </div>
-                    
-                    {/* Vault Balance */}
-                    <div className="mb-6 pb-6 border-b border-white/5 relative z-10">
-                      <p className="text-[10px] text-muted-foreground mb-2 uppercase tracking-widest font-bold">SECURE VAULT</p>
-                      <p className="text-3xl font-bold text-primary group-hover:glow-text transition-all">
-                        {vaultLoading ? '...' : vaultBalance}
-                      </p>
-                    </div>
-                    
-                    {/* Wallet Balance */}
-                    <div className="relative z-10">
-                      <p className="text-[10px] text-muted-foreground mb-2 uppercase tracking-widest font-bold">LIQUID WALLET</p>
-                      <p className="text-xl font-bold text-white opacity-80">{walletBalance}</p>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Deposit/Withdraw Tabs */}
-          <div className="rounded-3xl border border-primary bg-black/40 backdrop-blur-xl p-8 shadow-[0_0_20px_rgba(255,138,0,0.15)] mb-12">
-            <Tabs defaultValue="deposit">
-              <TabsList className="grid w-full grid-cols-2 p-1 bg-white/5 rounded-2xl mb-8 border border-white/10">
-                <TabsTrigger value="deposit" className="py-4 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-black font-hero font-bold tracking-wider">
-                  <Download className="h-4 w-4 mr-2" />
-                  DEPOSIT
+            {/* Deposit/Withdraw Tabs */}
+            <Tabs defaultValue="deposit" className="w-full">
+              <TabsList className="w-full bg-white/5 p-1 rounded-2xl border border-white/10">
+                <TabsTrigger value="deposit" className="w-1/2 py-3 rounded-xl font-bold uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black transition-all">
+                  <Download className="w-4 h-4 mr-2" />
+                  Deposit
                 </TabsTrigger>
-                <TabsTrigger value="withdraw" className="py-4 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-black font-hero font-bold tracking-wider">
-                  <Upload className="h-4 w-4 mr-2" />
-                  WITHDRAW
+                <TabsTrigger value="withdraw" className="w-1/2 py-3 rounded-xl font-bold uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black transition-all">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Withdraw
                 </TabsTrigger>
               </TabsList>
-
-              <TabsContent value="deposit" className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 block">Enter Deposit Amount ({selectedToken})</label>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      placeholder="0.00"
-                      value={depositAmount}
-                      onChange={(e) => setDepositAmount(e.target.value)}
-                      disabled={smartContract.isProcessing}
-                      className="bg-white/5 border-white/10 text-white font-mono text-2xl py-8 rounded-2xl focus:border-primary transition-all pr-16"
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-primary font-bold">MAX</div>
+              
+              <TabsContent value="deposit" className="mt-8 space-y-6">
+                <div className="p-8 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-bold text-white uppercase tracking-tight">Deposit {selectedToken}</h3>
+                    <CryptoLogo symbol={selectedToken} size="sm" />
                   </div>
-                </div>
-                
-                <div className="grid grid-cols-4 gap-4">
-                  {[25, 50, 75, 100].map((percent) => (
-                    <Button
-                      key={percent}
-                      variant="heroOutline"
-                      size="sm"
-                      onClick={() => setPercentage(percent, true)}
-                      disabled={smartContract.isProcessing}
-                      className="py-6 rounded-xl border-white/10 bg-white/5 hover:bg-primary hover:text-black transition-all font-mono font-bold"
-                    >
-                      {percent}%
-                    </Button>
-                  ))}
+                  
+                  <div className="space-y-4 mb-6">
+                    <div>
+                      <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-white/50 mb-2 px-1">
+                        <span>Amount</span>
+                        <span>Wallet: {getFormattedBalance(selectedToken, true)}</span>
+                      </div>
+                      <div className="relative">
+                        <Input 
+                          type="number" 
+                          placeholder="0.00" 
+                          className="h-16 text-2xl font-mono bg-black/40 border-white/10 rounded-2xl focus:border-primary transition-all pr-24"
+                          value={depositAmount}
+                          onChange={(e) => setDepositAmount(e.target.value)}
+                        />
+                        <button 
+                          className="absolute right-4 top-1/2 -translate-y-1/2 px-3 py-1 bg-primary/20 text-primary text-xs font-bold rounded-lg hover:bg-primary/30 transition-all uppercase tracking-widest"
+                          onClick={() => handleSetMax(true)}
+                        >
+                          Max
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-2">
+                      {[25, 50, 75, 100].map(p => (
+                        <Button key={p} variant="outline" size="sm" onClick={() => setPercentage(p, true)} className="border-white/10 bg-white/5 hover:bg-primary/10">
+                          {p}%
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <Button
-                  variant="hero"
+                  variant="glow"
                   onClick={handleDeposit}
                   disabled={!depositAmount || smartContract.isProcessing}
-                  className="w-full py-8 text-xl font-hero font-bold rounded-2xl shadow-[0_0_20px_rgba(255,138,0,0.3)]"
+                  className="w-full py-8 text-xl font-hero font-bold rounded-2xl"
                 >
-                  {smartContract.isProcessing ? 'Processing Transaction...' : `DEPOSIT ${selectedToken} TO VAULT`}
+                  {smartContract.isProcessing ? 'Processing...' : `DEPOSIT ${selectedToken}`}
                 </Button>
               </TabsContent>
 
-              <TabsContent value="withdraw" className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 block">Enter Withdrawal Amount ({selectedToken})</label>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      placeholder="0.00"
-                      value={withdrawAmount}
-                      onChange={(e) => setWithdrawAmount(e.target.value)}
-                      disabled={smartContract.isProcessing}
-                      className="bg-white/5 border-white/10 text-white font-mono text-2xl py-8 rounded-2xl focus:border-primary transition-all pr-16"
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-primary font-bold">MAX</div>
+              <TabsContent value="withdraw" className="mt-8 space-y-6">
+                <div className="p-8 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-bold text-white uppercase tracking-tight">Withdraw {selectedToken}</h3>
+                    <CryptoLogo symbol={selectedToken} size="sm" />
                   </div>
-                </div>
-                
-                <div className="grid grid-cols-4 gap-4">
-                  {[25, 50, 75, 100].map((percent) => (
-                    <Button
-                      key={percent}
-                      variant="heroOutline"
-                      size="sm"
-                      onClick={() => setPercentage(percent, false)}
-                      disabled={smartContract.isProcessing}
-                      className="py-6 rounded-xl border-white/10 bg-white/5 hover:bg-primary hover:text-black transition-all font-mono font-bold"
-                    >
-                      {percent}%
-                    </Button>
-                  ))}
+                  
+                  <div className="space-y-4 mb-6">
+                    <div>
+                      <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-white/50 mb-2 px-1">
+                        <span>Amount</span>
+                        <span>Vault: {getFormattedBalance(selectedToken)}</span>
+                      </div>
+                      <div className="relative">
+                        <Input 
+                          type="number" 
+                          placeholder="0.00" 
+                          className="h-16 text-2xl font-mono bg-black/40 border-white/10 rounded-2xl focus:border-primary transition-all pr-24"
+                          value={withdrawAmount}
+                          onChange={(e) => setWithdrawAmount(e.target.value)}
+                        />
+                        <button 
+                          className="absolute right-4 top-1/2 -translate-y-1/2 px-3 py-1 bg-primary/20 text-primary text-xs font-bold rounded-lg hover:bg-primary/30 transition-all uppercase tracking-widest"
+                          onClick={() => handleSetMax(false)}
+                        >
+                          Max
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-2">
+                      {[25, 50, 75, 100].map(p => (
+                        <Button key={p} variant="outline" size="sm" onClick={() => setPercentage(p, false)} className="border-white/10 bg-white/5 hover:bg-primary/10">
+                          {p}%
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <Button
                   variant="hero"
                   onClick={handleWithdraw}
                   disabled={!withdrawAmount || smartContract.isProcessing}
-                  className="w-full py-8 text-xl font-hero font-bold rounded-2xl shadow-[0_0_20px_rgba(255,138,0,0.3)]"
+                  className="w-full py-8 text-xl font-hero font-bold rounded-2xl"
                 >
-                  {smartContract.isProcessing ? 'Processing Transaction...' : `WITHDRAW ${selectedToken} FROM VAULT`}
+                  {smartContract.isProcessing ? 'Processing...' : `WITHDRAW ${selectedToken}`}
                 </Button>
               </TabsContent>
             </Tabs>
           </div>
 
-          {/* Info Card */}
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-8 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-2 h-full bg-primary" />
-            <h2 className="font-hero text-xl font-bold tracking-tight text-white mb-6 flex items-center gap-3">
-              <ShieldCheck className="h-5 w-5 text-primary" />
-              SECURITY PROTOCOLS
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground font-medium">
-              <div className="flex items-start gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                <p>One-time asset opt-in required for secure bridging.</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                <p>Institutional minimum balance protections enforced.</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                <p>Nanosecond execution on Algorand Testnet V3.</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                <p>Transactions non-custodial and verified on-chain.</p>
+          {/* Right Column: Security & History */}
+          <div className="space-y-8">
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-8 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-2 h-full bg-primary" />
+              <h2 className="font-hero text-xl font-bold tracking-tight text-white mb-6 flex items-center gap-3">
+                <ShieldCheck className="w-5 h-5 text-primary" />
+                SECURITY
+              </h2>
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-primary font-bold text-xs">01</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold text-sm mb-1 uppercase tracking-wider">Smart Contract</h3>
+                    <p className="text-muted-foreground text-xs leading-relaxed">
+                      Assets are held in an audited Algorand smart contract.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-primary font-bold text-xs">02</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold text-sm mb-1 uppercase tracking-wider">Non-Custodial</h3>
+                    <p className="text-muted-foreground text-xs leading-relaxed">
+                      Withdraw your funds at any time, instantly.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
+
+            <Card className="bg-black/40 border-white/10 text-white rounded-3xl overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-primary uppercase tracking-widest text-sm font-bold">History</CardTitle>
+                <Button variant="ghost" size="sm" onClick={fetchTransactions} disabled={loadingTransactions}>
+                  <RefreshCw className={`h-4 w-4 ${loadingTransactions ? 'animate-spin' : ''}`} />
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {loadingTransactions ? (
+                  <div className="text-center py-8 text-muted-foreground text-xs">SYNCING...</div>
+                ) : transactions.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground text-xs">NO ENTRIES</div>
+                ) : (
+                  <div className="space-y-3">
+                    {transactions.map((tx) => {
+                      const isProfit = tx.transactionHash.startsWith('PROFIT-');
+                      return (
+                        <div key={tx._id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:border-primary/30 transition-all">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${isProfit ? 'bg-yellow-500/10 text-yellow-500' : tx.type === 'deposit' ? 'bg-green-500/10 text-green-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                              {isProfit ? "💰" : tx.type === 'deposit' ? <Download className="h-3 w-3" /> : <Upload className="h-3 w-3" />}
+                            </div>
+                            <div>
+                              <p className="font-bold uppercase text-[10px]">{isProfit ? 'Profit' : tx.type}</p>
+                              <p className="text-[8px] text-muted-foreground font-mono">{new Date(tx.timestamp || tx.createdAt || "").toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className={`font-mono font-bold text-xs ${isProfit || tx.type === 'deposit' ? 'text-green-400' : 'text-red-400'}`}>
+                              {isProfit || tx.type === 'deposit' ? '+' : '-'}{tx.amountFormatted.toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </main>

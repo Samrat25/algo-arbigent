@@ -160,10 +160,8 @@ export const useVault = (): UseVaultReturn => {
     const symbol = coinSymbol.toUpperCase();
     
     // Convert from smallest units to human readable
-    let decimals = 8; // Default for APT
-    if (symbol === 'USDC' || symbol === 'USDT') {
-      decimals = 6;
-    }
+    // All Algorand tokens use 6 decimals
+    const decimals = 6;
     
     const numBalance = parseFloat(balance) / Math.pow(10, decimals);
     

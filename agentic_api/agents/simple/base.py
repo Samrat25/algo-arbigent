@@ -1,4 +1,4 @@
-"""Base Agent class for Aptos arbitrage system"""
+"""Base Agent class for Algorand arbitrage system"""
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
 from datetime import datetime
@@ -7,7 +7,7 @@ import asyncio
 
 
 class BaseAgent(ABC):
-    """Base agent for Aptos arbitrage system with caching and timeout handling"""
+    """Base agent for Algorand arbitrage system with caching and timeout handling"""
     
     def __init__(self, name: str):
         self.name = name

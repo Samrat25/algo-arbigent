@@ -1,5 +1,5 @@
 interface CryptoLogoProps {
-  symbol: string;
+  symbol: "ALGO" | "USDC" | "USDT" | string;
   size?: "sm" | "md" | "lg";
   className?: string;
 }
@@ -17,13 +17,13 @@ const CryptoLogo = ({ symbol, size = "md", className = "" }: CryptoLogoProps) =>
     lg: "text-sm",
   };
 
-  if (symbol === "APT") {
+  if (symbol === "ALGO") {
     return (
       <div className={`${sizeClasses[size]} relative flex items-center justify-center rounded-full overflow-hidden shadow-lg ${className}`}>
         <img 
-          src="/aptos_icon.png" 
-          alt="APT" 
-          className="h-full w-full object-cover"
+          src="https://cryptologos.cc/logos/algorand-algo-logo.png" 
+          alt="ALGO" 
+          className="h-full w-full object-cover p-1 bg-white"
         />
       </div>
     );
